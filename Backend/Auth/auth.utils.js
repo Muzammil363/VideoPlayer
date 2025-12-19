@@ -1,3 +1,6 @@
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
 export const comparePasswords = async (plainPassword, hashedPassword) => {
     const isMatch = await bcrypt.compare(plainPassword, hashedPassword);
     return isMatch;

@@ -1,7 +1,14 @@
 import express from 'express'
 import authRouter from './Auth/auth.router.js';
+import {connectMongoDB} from './Config/Mongo.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
+await connectMongoDB();
 
 const app = express();
+app.use(express.json());
+app.use(express.urlencoded({extended:true}));
 
 app.use('/auth', authRouter);
 

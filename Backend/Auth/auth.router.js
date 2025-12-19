@@ -14,7 +14,7 @@ router.post("/login", LoginController);
 
 router.post("/signup", SignupController);
 router.post("/verify-email", VerifyEmailController);
-router.post("/resend-otp",ResendOtpController)
+router.post("/resend-otp",ResendOtpController);
 
 router.delete("/logout", LogoutController);
 

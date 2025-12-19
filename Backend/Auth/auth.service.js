@@ -1,9 +1,9 @@
 import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
+import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
-import { User } from '../Models/User.model.js';
-import { PendingUser } from '../Models/PendingUser.model.js';
+import  {User}  from '../Models/User.js';
+import { PendingUser } from '../Models/PendingUser.js';
 import nodemailer from 'nodemailer';
 
 import {
@@ -236,24 +236,28 @@ export const ResendOtpService = async (email) => {
     Mail Service to send OTP to user's email
     transporter configuration using nodemailer
 */
-const transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS
-    }
-});
+const createTransporter = () => {
+    return nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: process.env.MAIL_USER,
+            pass: process.env.MAIL_PASS
+        }
+    });
+};
 
-const MailService = async (email, otp) => {
+export const MailService = async (email, otp) => {
     try {
+        const transporter = createTransporter(); // Create it right when needed
+        
         await transporter.sendMail({
             from: process.env.MAIL_USER,
             to: email,
-            subject: 'Email Verification OTP',
-            text: `Your OTP for email verification is ${otp}. It is valid for 10 minutes.`
+            subject: `Verify your account - ${new Date().toLocaleTimeString()}`,
+            text: `Your OTP is ${otp}. Valid for 10 minutes.`
         });
     } catch (error) {
-        console.log('MailService error:', error);
+        console.error('MailService error:', error);
         throw new Error('Failed to send verification email');
     }
 };
