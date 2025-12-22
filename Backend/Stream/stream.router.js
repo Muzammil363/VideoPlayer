@@ -1,0 +1,21 @@
+import express from "express";
+
+import { 
+    loadMoreVideosController,
+    sendManifest,
+    sendSegment,
+    sendMasterManifest,
+    sendVideo
+} from "./stream.controller.js";
+
+const router = express.Router();
+
+router.get("/videos/:pageNo",loadMoreVideosController);
+
+router.get("/video/:videoId", sendVideo);
+
+router.get("/masterManifest/:videoId",sendMasterManifest); //check whether the requester is allowed or not then rewrite it and send
+router.get("/manifest",sendManifest); //validate token and reqrite the output.m3u8 and send it
+router.get("/segment",sendSegment); //validate token and send the sengment file
+
+export default router;
