@@ -1,0 +1,186 @@
+/* --- Overlay Background --- */
+.overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7); /* Dark dimmed background */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+/* --- Modal Container --- */
+.modal {
+  background-color: #ffffff;
+  width: 100%;
+  max-width: 600px;
+  max-height: 90vh; /* Prevent it from being taller than screen */
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* --- Header --- */
+.header {
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e5e5;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #606060;
+  padding: 5px;
+}
+
+/* --- Scrollable Form Area --- */
+.body {
+  padding: 1.5rem;
+  overflow-y: auto; /* Scroll inside modal if content is long */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* --- Form Groups --- */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #0f0f0f;
+}
+
+.input, .textarea {
+  padding: 12px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.input:focus, .textarea:focus {
+  border-color: #3ea6ff;
+}
+
+/* --- File Input Styling --- */
+.fileUploadBox {
+  border: 2px dashed #ccc;
+  padding: 2rem;
+  text-align: center;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s;
+  background-color: #f9f9f9;
+}
+
+.fileUploadBox:hover {
+  border-color: #3ea6ff;
+  background-color: #f0f8ff;
+}
+
+.fileInput {
+  display: none; /* Hide the ugly default input */
+}
+
+.fileName {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #3ea6ff;
+  font-weight: 500;
+}
+
+/* --- Genre Chips --- */
+.genreContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.genreChip {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  border: 1px solid #ccc;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.genreChip:hover {
+  background-color: #f2f2f2;
+}
+
+.genreChipActive {
+  background-color: #0f0f0f;
+  color: white;
+  border-color: #0f0f0f;
+}
+
+/* --- Footer --- */
+.footer {
+  padding: 1rem 1.5rem;
+  border-top: 1px solid #e5e5e5;
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+}
+
+.cancelBtn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #606060;
+}
+
+.uploadBtn {
+  padding: 10px 24px;
+  background-color: #3ea6ff;
+  color: white;
+  border: none;
+  border-radius: 2px;
+  font-weight: 500;
+  cursor: pointer;
+  text-transform: uppercase;
+}
+
+.uploadBtn:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}

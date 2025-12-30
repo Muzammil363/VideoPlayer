@@ -1,0 +1,321 @@
+.container {
+  --primary-bg: #f9f9f9;
+  --secondary-bg: #ffffff;
+  --text-main: #0f0f0f;
+  --text-secondary: #606060;
+  --accent-color: #cc0000; /* Red Theme */
+  --header-height: 56px;
+
+  padding-top: var(--header-height);
+  background-color: var(--primary-bg);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+}
+
+.layoutGrid {
+  display: grid;
+  grid-template-columns: 1fr 400px; /* Video Area | Related Videos */
+  gap: 24px;
+  max-width: 1600px;
+  width: 95%;
+  padding: 24px 0;
+}
+
+/* --- 1. Video Player Container --- */
+.playerWrapper {
+  width: 100%;
+  background-color: black;
+  aspect-ratio: 16 / 9;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  group: hover; /* To show controls on hover */
+}
+
+.videoElement {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Custom Controls Overlay */
+.controlsOverlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+  padding: 10px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.playerWrapper:hover .controlsOverlay {
+  opacity: 1;
+}
+
+/* Progress Bar */
+.progressBarContainer {
+  width: 100%;
+  height: 5px;
+  background: rgba(255,255,255,0.3);
+  cursor: pointer;
+  position: relative;
+}
+
+.progressFill {
+  height: 100%;
+  background-color: var(--accent-color);
+  width: 0%; /* Dynamic */
+}
+
+/* Buttons Row */
+.controlsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: white;
+}
+
+.controlGroup {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.iconBtn {
+  background: none;
+  border: none;
+  color: white;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.timeDisplay {
+  font-size: 0.85rem;
+  font-family: monospace;
+}
+
+/* Volume Slider */
+.volumeContainer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 40px; /* Collapsed width */
+  transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.volumeContainer:hover {
+  width: 120px; /* Expanded width */
+}
+
+.volumeSlider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  background: rgba(255,255,255,0.3);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.volumeSlider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: white;
+  cursor: pointer;
+}
+
+/* Quality Menu Container */
+.qualityContainer {
+  position: relative;
+}
+
+.qualityBadge {
+  font-size: 0.75rem;
+  font-weight: bold;
+  border: 1px solid white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  background: rgba(0,0,0,0.5);
+  transition: background 0.2s;
+  min-width: 45px;
+  text-align: center;
+}
+
+.qualityBadge:hover {
+  background: white;
+  color: black;
+}
+
+/* The Popup Menu for Qualities */
+.qualityMenu {
+  position: absolute;
+  bottom: 40px; /* Appear above the badge */
+  right: 0;
+  background-color: rgba(20, 20, 20, 0.95);
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 120px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  z-index: 20;
+  backdrop-filter: blur(5px);
+}
+
+.qualityOption {
+  background: none;
+  border: none;
+  color: #e0e0e0;
+  padding: 8px 16px;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+  display: flex;
+  justify-content: space-between;
+}
+
+.qualityOption:hover {
+  background-color: rgba(255,255,255,0.1);
+}
+
+.qualityOption.active {
+  color: var(--accent-color);
+  font-weight: bold;
+}
+/* --- 2. Video Info Section --- */
+.infoContainer {
+  margin-top: 1rem;
+}
+
+.videoTitle {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+
+.actionsRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.channelInfo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rebeccapurple;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.channelText {
+  display: flex;
+  flex-direction: column;
+}
+
+.channelName { font-weight: 600; font-size: 1rem; }
+.subCount { font-size: 0.8rem; color: var(--text-secondary); }
+
+.actionButtons {
+  display: flex;
+  gap: 10px;
+}
+
+.pillBtn {
+  background-color: #f2f2f2;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 18px;
+  cursor: pointer;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.9rem;
+}
+.pillBtn:hover { background-color: #e5e5e5; }
+
+.descriptionBox {
+  background-color: #f2f2f2;
+  padding: 1rem;
+  border-radius: 12px;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+}
+
+/* --- 3. Related Videos (Sidebar) --- */
+.relatedContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.relatedCard {
+  display: flex;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.relatedThumb {
+  width: 168px;
+  height: 94px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #ccc;
+  flex-shrink: 0;
+}
+
+.relatedDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.relatedTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.relatedMeta {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .layoutGrid { grid-template-columns: 1fr; }
+  .relatedCard { width: 100%; }
+  .relatedThumb { width: 40%; aspect-ratio: 16/9; height: auto; }
+}

@@ -1,5 +1,5 @@
 import { getVideoById, getVideos } from './stream.dto.js';
-import { isLiked } from '../Likes/likes.dto.js';
+import { isLiked } from './stream.dto.js'
 
 import jwt from "jsonwebtoken";
 import fs from 'fs/promises';

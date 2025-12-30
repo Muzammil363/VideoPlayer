@@ -6,11 +6,12 @@ export const comparePasswords = async (plainPassword, hashedPassword) => {
     return isMatch;
 }
 
-export const generateToken = async (email) => {
+export const generateToken = async (id) => {
     try {
+        console.log("generating token with _id: ",id);
         const token = await new Promise((resolve, reject) => {
             jwt.sign(
-                { email },
+                { _id: id },
                 process.env.JWT_SECRET,
                 { expiresIn: '1d' },
                 (err, token) => {

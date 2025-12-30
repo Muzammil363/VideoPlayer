@@ -27,7 +27,7 @@ export const LoginService = async (email, password) => {
         }
 
         if (await comparePasswords(password, user.password)) {
-            const token = await generateToken(user.email);
+            const token = await generateToken(user._id);
             return {
                 status: 200,
                 success: true,
@@ -122,7 +122,7 @@ export const VerifyEmailService = async (email, code) => {
         if (!pendingUser) {
             const user = await User.findOne({ email });
             if (user) {
-                const token = await generateToken(email);
+                const token = await generateToken(user._id);
                 return {
                     status: 200,
                     success: true,

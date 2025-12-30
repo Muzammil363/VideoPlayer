@@ -22,7 +22,7 @@ export const requireUser = (req, res, next) => {
 //will serialize the token in req.token
 export const checkToken = (req, res, next) => {
     const token = req.cookies.token;
-    console.log("token: ",token);
+    // console.log("token: ",token);
     if (!token) {
         return res.status(403).json({
             error: "token not there in cookies"

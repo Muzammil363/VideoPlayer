@@ -1,4 +1,4 @@
-import Video from "../Models/Video"
+import Video from "../Models/Video.js"
 
 export const getVideoById= async (videoId) => {
     return await Video.findById(videoId);

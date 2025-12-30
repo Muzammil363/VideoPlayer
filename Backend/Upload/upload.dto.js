@@ -2,6 +2,7 @@ import Video from "../Models/Video.js";
 
 export const addVideoDao = async (file, title, description, masterM3U8, uniqueFolderPath, userId,genre,thumbnailPath) => {
     console.log(title);
+    
     const newVideo = new Video({
         originalName: file.originalname,
         mimeType: file.mimetype,
