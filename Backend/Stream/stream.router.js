@@ -8,9 +8,16 @@ import {
     sendVideo
 } from "./stream.controller.js";
 
-const router = express.Router();
+import {
+    streamMiddleware
+} from "./stream.middleware.js";
 
-router.get("/videos/:pageNo",loadMoreVideosController);
+const router = express.Router();
+/*
+    Pagination for videos and middleware 
+*/
+
+router.get("/videos/:pageNo", streamMiddleware, loadMoreVideosController);
 
 router.get("/video/:videoId", sendVideo);
 

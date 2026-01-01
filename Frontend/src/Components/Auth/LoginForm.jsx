@@ -1,14 +1,41 @@
 import React, { useState } from 'react';
 import styles from '../../styles/Auth.module.css';
 
+import { useNavigate } from 'react-router-dom';
+
 const LoginForm = ({ onSwitchToSignup }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  /*
+    Form submission 
+    calls /auth/login 
+  */
+  const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("Logging in with:", { email, password });
-    // TODO: Call Login API
+    try {
+      const response = await fetch('http://localhost:3000/auth/login', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      console.log("Login response:", data); // To be removed later
+      if(data.success){
+        navigate('/');
+      }
+      else {
+        alert("Login failed");
+        // Add toast later
+      }
+
+    } catch (error) {
+      console.error("Login error:", error);
+    }
   };
 
   const handleForgotPassword = () => {

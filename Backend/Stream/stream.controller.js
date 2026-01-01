@@ -14,8 +14,9 @@ export const loadMoreVideosController = async (req, res) => {
             error: "pageNo cannot be negative"
         });
     }
-    const response = await loadMoreVideosService(pageNo);
-    console.log("response :", response.videos)
+    const user=req.user;
+    const response = await loadMoreVideosService(pageNo , user);
+    
     if (!response.success) {
         return res.status(500).json({
             success: false,
@@ -26,6 +27,7 @@ export const loadMoreVideosController = async (req, res) => {
         success: true,
         message: "videos fetched successfully",
         videos: response.videos,
+        user: response.user,
         hasNext: response.hasNext,
     });
 }

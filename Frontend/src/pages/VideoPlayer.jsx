@@ -1,14 +1,17 @@
 import React from 'react';
-import styles from '../styles/VideoPlayer.module.css';
-import TopBar from '../components/Home/TopBar'; // Reusing TopBar
+import { useParams } from 'react-router-dom';
 
+import styles from '../styles/VideoPlayer.module.css';
+
+import TopBar from '../components/Home/TopBar'; 
 import CustomPlayer from '../Components/VideoPlayer/CustomPlayer';
 import VideoDetails from '../Components/VideoPlayer/VideoDetails';
 import RelatedVideos from '../Components/VideoPlayer/RelatedVideos';
 
 const VideoPlayerPage = () => {
   // Sample video (Open source Big Buck Bunny or any mp4 link)
-  const SAMPLE_VIDEO = "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8";
+  const { videoId } = useParams();
+  const SAMPLE_VIDEO = `http://localhost:3000/stream/masterManifest/${videoId}`; // Replace with actual video source based on videoId
 
   return (
     <>

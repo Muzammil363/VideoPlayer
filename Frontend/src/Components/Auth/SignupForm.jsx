@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styles from '../../styles/Auth.module.css';
 
+import { useNavigate } from 'react-router-dom';
+
 const SignupForm = ({ onSwitchToLogin }) => {
   // --- State ---
   const [step, setStep] = useState(1); // 1: Details, 2: Verification
@@ -11,6 +13,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
     confirmPassword: ''
   });
   const [otp, setOtp] = useState('');
+  const navigate = useNavigate();
 
   // --- Handlers ---
   
@@ -19,30 +22,68 @@ const SignupForm = ({ onSwitchToLogin }) => {
   };
 
   // Step 1: Validate & Send OTP
-  const handleSendOtp = (e) => {
+  const handleSendOtp = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
       alert("Passwords do not match!");
       return;
     }
-    
     // API Call Simulation
+
+    try {
+      const response=await fetch("http://localhost:3000/auth/signup",{
+        method:"POST",
+        credentials:"include",
+        headers:{
+          "Content-Type":"application/json",
+        },
+        body:JSON.stringify(formData)
+      });
+      const data=await response.json();
+      console.log("Signup Response: ",data); // To be removed later
+
+      if(data.success){
+        alert("OTP Sent to your email (use 1234 as OTP for testing)");
+        setStep(2);
+      }
+      else {
+        alert("Signup failed");
+        // Add toast later
+      }
+    } catch (error) {
+      console.log("Error at sendOTP: ",error);
+    }
     console.log("Sending OTP to:", formData.email);
     alert(`OTP Sent to ${formData.email} (Check console/use 1234)`);
     setStep(2);
   };
 
   // Step 2: Verify & Submit
-  const handleVerifyAndSignup = (e) => {
+  const handleVerifyAndSignup = async (e) => {
     e.preventDefault();
-    
-    // API Call Simulation: Verify OTP
-    if (otp === "1234") {
-      console.log("OTP Verified. Creating Account...", formData);
-      alert("Account Created Successfully! Please Login.");
-      onSwitchToLogin(); // Go back to login screen
-    } else {
-      alert("Invalid OTP. Please try again.");
+    // API Call 
+
+    try {
+      let response=await fetch("http://localhost:3000/auth/verify-email",{
+        method:"POST",
+        credentials:"include",
+        headers:{
+          "Content-Type":"application/json",
+        },
+        body:JSON.stringify({ email: formData.email, code:otp })
+      });
+      const data=await response.json();
+      console.log("Verify OTP Response: ",data); // To be removed later 
+
+      if(data.success) {
+        alert("Account Created Successfully! Please Login."); // Change it later
+        navigate('/');
+      } else {
+        alert("Invalid OTP. Please try again.");
+        // Add toast later
+      }
+    } catch (error) {
+      console.log("Error at verify: ",error);
     }
   };
 
@@ -130,7 +171,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
                 value={otp}
                 onChange={(e) => setOtp(e.target.value)}
                 placeholder="XXXX"
-                maxLength="4"
+                maxLength="6"
               />
             </div>
 

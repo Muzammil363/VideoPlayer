@@ -42,7 +42,7 @@ const TopBar = ({ toggleSidebar }) => {
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <div style={{ width: 32, height: 32, background: 'purple', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            {profile?.name ? profile.name.charAt(0).toUpperCase() : 'U'}
+            {profile?.username ? profile.username.charAt(0).toUpperCase() : 'U'}
           </div>
         </div>
       </NavLink> :

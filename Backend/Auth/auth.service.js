@@ -27,7 +27,7 @@ export const LoginService = async (email, password) => {
         }
 
         if (await comparePasswords(password, user.password)) {
-            const token = await generateToken(user._id);
+            const token = await generateToken(user._id , user.username);
             return {
                 status: 200,
                 success: true,
@@ -54,6 +54,7 @@ export const LoginService = async (email, password) => {
 }
 /*
     Signup service with email validation
+    Generates and sends OTP to user's email for verification
 */
 export const SignupService = async (username, email, password) => {
     try {
@@ -122,7 +123,7 @@ export const VerifyEmailService = async (email, code) => {
         if (!pendingUser) {
             const user = await User.findOne({ email });
             if (user) {
-                const token = await generateToken(user._id);
+                const token = await generateToken(user._id,user.username);
                 return {
                     status: 200,
                     success: true,

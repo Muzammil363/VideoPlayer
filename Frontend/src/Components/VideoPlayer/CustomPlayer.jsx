@@ -28,7 +28,7 @@ const CustomPlayer = ({ videoSrc }) => {
       hls = new Hls();
       hlsRef.current = hls;
 
-      hls.loadSource(videoSrc);
+      hls.loadSource(videoSrc); // give manifest url to this function
       hls.attachMedia(videoRef.current);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {

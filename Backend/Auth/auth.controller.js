@@ -16,7 +16,14 @@ export const LoginController=async (req,res)=>{
 
     let response=await LoginService(email,password);
     if(response.success) {
-        res.cookie('token', response.data, {httpOnly: true, secure: true, sameSite: 'Strict'});
+        console.log("setting cookie");
+        console.log("cookie: ",response.data)
+        res.cookie('token', response.data ,{
+            httpOnly: true,
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+        console.log(res.cookie);
     }
     return res.status(response.status).json({success:response.success,message:response.message,data:response.data});
 }

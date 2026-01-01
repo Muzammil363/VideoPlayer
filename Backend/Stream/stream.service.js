@@ -1,5 +1,6 @@
 import { getVideoById, getVideos } from './stream.dto.js';
 import { isLiked } from './stream.dto.js'
+import {User} from '../Models/User.js';
 
 import jwt from "jsonwebtoken";
 import fs from 'fs/promises';
@@ -30,13 +31,18 @@ export const getVideoService = async (token, videoId) => {
     }
 }
 
-export const loadMoreVideosService = async (pageNo) => {
+export const loadMoreVideosService = async (pageNo , user) => {
     const limit = 20;
-    console.log("page number: ", pageNo)
     const videos = await getVideos(pageNo);
+    
+    let fetched;
+    if(pageNo == 0) {
+        fetched = await User.findById(user._id);
+    }
     return {
         success: true,
         videos: videos,
+        user: fetched,
         hasNext: (videos.length > limit),
     }
 }
@@ -96,7 +102,6 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
 
 export const sendManifestService = async (token) => {
     try {
-        console.log(process.env.JWT_SECRET);
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
         const manifestPath = path.join(process.cwd(), decoded.resource);

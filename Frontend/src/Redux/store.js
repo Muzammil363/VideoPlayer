@@ -15,7 +15,7 @@ const authSlice = createSlice({
 
 const ProfileSlice = createSlice({
   name: "profile",
-  initialState: { profileData: {name:"Muzammil"} },
+  initialState: { profileData: {username:"Muzammil"} },
   reducers: {
     setProfileData(state, action) {
       state.profileData = action.payload;
