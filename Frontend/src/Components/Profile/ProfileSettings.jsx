@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import styles from '../../styles/Profile.module.css';
 import PasswordModal from './PasswordModal';
 
@@ -8,20 +8,92 @@ const ProfileSettings = () => {
   const [channelDesc, setChannelDesc] = useState('I make videos about React and Node.js');
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
-  // Helper to get first letter for Avatar
   const getInitials = (name) => {
     return name ? name.charAt(0).toUpperCase() : 'U';
   };
 
   const handleUserUpdate = () => {
-    console.log("Updating Username to:", userName);
-    alert("Username updated!");
+    (async () => {
+      try {
+        const res = await fetch("http://localhost:3000/user/updatename", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json" 
+          },
+          credentials: "include",
+          body: JSON.stringify({ 
+            name: userName
+           })
+        });
+
+        const responseData = await res.json();
+
+        if (!res.ok || !responseData.success) {
+          console.error('Update username failed', responseData);
+          alert(responseData.message || 'Failed to update username');
+          return;
+        }
+        
+        console.log("username update: ",responseData.data);
+        setUserName(responseData.data.name);
+        alert('Username updated!');
+      } catch (error) {
+        console.error('Error updating username:', error);
+        alert('Error updating username');
+      }
+    })();
   };
 
   const handleChannelUpdate = () => {
-    console.log("Updating Channel:", { channelName, channelDesc });
-    alert("Channel details updated!");
+    (async () => {
+      try {
+        const res = await fetch("http://localhost:3000/user/updateChannel", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json"
+           },
+          credentials: "include",
+          body: JSON.stringify({ 
+            channelName, 
+            channelDescription: channelDesc 
+          })
+        });
+
+        const responseData = await res.json();
+
+        if (!res.ok || !responseData.success) {
+          console.error('Update channel failed', responseData);
+          alert(responseData.message || 'Failed to update channel');
+          return;
+        }
+
+        setChannelName(responseData.data.name);
+        setChannelDesc(responseData.data.description);
+        alert('Channel details updated!');
+      } catch (error) {
+        console.error('Error updating channel:', error);
+        alert('Error updating channel');
+      }
+    })();
   };
+  
+  // To load profile data
+  useEffect(()=>{
+    async function loadProfile() {
+      let response = await fetch("http://localhost:3000/user/profile",{
+        method: "GET",
+        credentials: "include"
+      });
+      let responseData = await response.json();
+
+      console.log("responseData: ",responseData.data);
+
+      setUserName(responseData.data.username);
+      setChannelName(responseData.data.channelName);
+      setChannelDesc(responseData.data.channelDescription);
+    }
+    loadProfile();
+  },[])
 
   return (
     <div className={styles.contentArea}>

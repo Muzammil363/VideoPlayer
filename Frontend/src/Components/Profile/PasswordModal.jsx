@@ -6,27 +6,58 @@ const PasswordModal = ({ isOpen, onClose }) => {
   const [otp, setOtp] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [resetToken, setResetToken] = useState('');
 
   if (!isOpen) return null;
 
-  // --- Handlers for each step ---
-
-  // STEP 1: User Confirms they want to reset
   const handleConfirmReset = () => {
-    // API CALL SIMULATION: Request OTP from backend
-    console.log("Requesting OTP...");
-    setStep(2); // Move to OTP step
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:3000/user/reset-password', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 
+            'Content-Type': 'application/json' 
+          }
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          setStep(2);
+        } else {
+          alert(data.message || 'Failed to request OTP');
+        }
+      } catch (err) {
+        console.error('Request OTP error:', err);
+        alert('Network error while requesting OTP');
+      }
+    })();
   };
 
   // STEP 2: Verify OTP
   const handleVerifyOtp = () => {
-    // API CALL SIMULATION: Verify OTP
-    if (otp === "1234") { // Mock check
-      console.log("OTP Verified");
-      setStep(3); // Move to New Password step
-    } else {
-      alert("Invalid OTP (Hint: use 1234)");
-    }
+    // Call backend to verify OTP and receive a token
+    (async () => {
+      try {
+        // send otp in request body to POST /user/verify-reset
+        const res = await fetch('http://localhost:3000/user/verify-reset', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ otp })
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          // backend returns token in data
+          setResetToken(data.data);
+          setStep(3);
+        } else {
+          alert(data.message || 'Invalid OTP');
+        }
+      } catch (err) {
+        console.error('Verify OTP error:', err);
+        alert('Network error while verifying OTP');
+      }
+    })();
   };
 
   // STEP 3: Submit New Password
@@ -35,12 +66,32 @@ const PasswordModal = ({ isOpen, onClose }) => {
       alert("Passwords do not match!");
       return;
     }
-    // API CALL SIMULATION: Update Password
-    console.log("Password Updated Successfully");
-    alert("Password changed successfully!");
-    
-    // Reset and Close
-    handleClose(); 
+    if (!resetToken) {
+      alert('Missing reset token. Please verify OTP again.');
+      return;
+    }
+
+    (async () => {
+      try {
+        const res = await fetch('http://localhost:3000/user/update-password', {
+          method: 'PUT',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newPassword, token: resetToken })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          alert('Password changed successfully!');
+          handleClose();
+        } else {
+          alert(data.message || 'Failed to update password');
+        }
+      } catch (err) {
+        console.error('Update password error:', err);
+        alert('Network error while updating password');
+      }
+    })();
   };
 
   const handleClose = () => {

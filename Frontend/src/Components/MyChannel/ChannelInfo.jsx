@@ -12,7 +12,7 @@ const ChannelInfo = ({onUploadClick}) => {
         
         <div className={styles.channelDetails}>
           <h1 className={styles.channelName}>User's Channel</h1>
-          <span className={styles.channelStats}>@user_handle • 1.2M subscribers • 45 videos</span>
+          <span className={styles.channelStats}>1.2M subscribers</span>
           <span className={styles.channelStats}>Sharing knowledge about React and Web Development.</span>
         </div>
       </div>

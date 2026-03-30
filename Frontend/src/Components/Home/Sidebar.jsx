@@ -1,12 +1,11 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 
 import styles from '../../styles/Home.module.css';
 
 import { authActions } from '../../Redux/store';
 
-// SVG Path Data for cleanliness
 const icons = {
   Home: "M4 10v7h3v-7l5-5 5 5v7h3v-7l2 2-7-7-7 7zm14 7h-3v-4h-6v4H5v-9.17l7-7 7 7V17z",
   Library: "M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM12 5.5v9l6-4.5z",
@@ -23,33 +22,61 @@ const Sidebar = () => {
     { name: 'Home', icon: icons.Home, active: true, url: '/' },
     { name: 'Library', icon: icons.Library, active: false, url: '/u/library' },
     { name: 'History', icon: icons.History, active: false, url: '/u/history' },
-    { name: 'My Channel', icon: icons.MyChannel, active: false, url: '/u/myChannel' },
-    { name: 'Logout', icon: icons.Logout, active: false, url: '/' },
+    { name: 'My Channel', icon: icons.MyChannel, active: false, url: '/u/myChannel' }
   ];
+
+  const dispatch = useDispatch();
+
+  const handleLogout = async () => {
+    try {
+      const res = await fetch('http://localhost:3000/auth/logout', {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+      if (res.ok) {
+        dispatch(authActions.logout());
+        window.location.href = '/';
+      } else {
+        console.error('Logout failed');
+      }
+    } catch (err) {
+      console.error('Logout error', err);
+    }
+  };
 
   return (
     <aside className={styles.sidebar}>
 
-      {isLoggedIn ? menuItems.map((item) => (
-        <NavLink to={item.url ? item.url : '#'} key={item.name} className={`${item.active ? styles.active : ''}`}>
-          <div key={item.name} className={`${styles.navItem} ${item.active ? styles.active : ''}`}>
+      {isLoggedIn ? (
+        <>
+          {menuItems.map((item) => (
+            <NavLink to={item.url ? item.url : '#'} key={item.name} className={`${item.active ? styles.active : ''}`}>
+              <div key={item.name} className={`${styles.navItem} ${item.active ? styles.active : ''}`}>
+                <svg className={styles.iconSvg} viewBox="0 0 24 24">
+                  <path d={item.icon} />
+                </svg>
+                <span>{item.name}</span>
+              </div>
+            </NavLink>
+          ))}
+
+          <button onClick={handleLogout} className={styles.navItem} style={{ background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <svg className={styles.iconSvg} viewBox="0 0 24 24">
-              <path d={item.icon} />
+              <path d={icons.Logout} />
             </svg>
-            <span>{item.name}</span>
-          </div>
-        </NavLink>
-      ))
-        :
+            <span>Logout</span>
+          </button>
+        </>
+      ) : (
         <NavLink to={'/auth'}>
-          <div style={{"display":"flex","flexDirection":"column",gap:"10px",marginTop:"30px"}}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '30px' }}>
             <h4>Please sign in to explore more</h4>
-            <button className={styles.navItem} style={{"display":"flex",justifyContent:"center",alignItems:"center"}}>
+            <button className={styles.navItem} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
               Sign In
             </button>
           </div>
         </NavLink>
-      }
+      )}
     </aside>
   );
 };

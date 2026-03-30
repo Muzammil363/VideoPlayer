@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from '../../styles/History.module.css';
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 
 // Mock Data: Recently watched videos
 const initialHistory = [
@@ -12,11 +13,57 @@ const initialHistory = [
 ];
 
 const HistoryContent = () => {
-  const [historyVideos, setHistoryVideos] = useState(initialHistory);
+  const [historyVideos, setHistoryVideos] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
 
+  function renderVideos(apiResponse, type) {
+    const formattedVideos = apiResponse.map((item) => {
+      const video = item.videoId;
+
+      const rawPath = video.thumbnailPath || "";
+      const thumbnail = rawPath.split("\\")[2];
+      console.log(thumbnail);
+
+      return {
+        id: video._id,
+        title: video.title,
+        channel: video.channel?.name || "Unknown Channel",
+        views: video.views >= 1000 ? `${(video.views / 1000).toFixed(1)}K` : video.views.toString(),
+        time: formatRelativeTime(video.uploadTime),
+        duration: video.duration || "00:00",
+        thumbnail: `http://localhost:3000/thumbnails/${thumbnail}`
+      };
+    });
+    setHistoryVideos(formattedVideos);
+  }
+
+  // Helper to handle the "time ago" logic UPDATE THIS LATER
+  function formatRelativeTime(dateString) {
+    return formatDistanceToNowStrict(parseISO(dateString), { addSuffix: true })
+  }
+  /*
+     API call to load history
+   */
+  useEffect(() => {
+    async function loadHistory() {
+      let response = await fetch("http://localhost:3000/user/history", {
+        method: 'GET',
+        credentials: "include",
+        headers: {
+          "content-type": "application/json"
+        }
+      })
+
+      let data = await response.json();
+      if (data.success) {
+        renderVideos(data.data);
+      }
+    }
+    loadHistory();
+  }, []);
+
   // 1. Filter Logic (Search)
-  const filteredVideos = historyVideos.filter(video => 
+  const filteredVideos = historyVideos.filter(video =>
     video.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -29,23 +76,23 @@ const HistoryContent = () => {
 
   return (
     <div className={styles.contentArea}>
-      
+
       {/* Header with Search and Clear Button */}
       <div className={styles.historyHeader}>
         <h1 className={styles.title}>Watch History</h1>
-        
+
         <div className={styles.controls}>
-          <input 
-            type="text" 
-            placeholder="Search watch history..." 
+          <input
+            type="text"
+            placeholder="Search watch history..."
             className={styles.searchInput}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             disabled={historyVideos.length === 0} // Disable if empty
           />
-          
-          <button 
-            className={styles.clearBtn} 
+
+          <button
+            className={styles.clearBtn}
             onClick={handleClearHistory}
             disabled={historyVideos.length === 0}
           >
@@ -68,15 +115,15 @@ const HistoryContent = () => {
           {filteredVideos.map((video) => (
             <div key={video.id} className={styles.card}>
               <div className={styles.thumbnailContainer}>
-                <img 
-                  src={`https://picsum.photos/seed/${video.id + 200}/640/360`} 
-                  alt="thumbnail" 
-                  className={styles.thumbnailImage} 
+                <img
+                  src={video.thumbnail}
+                  alt="thumbnail"
+                  className={styles.thumbnailImage}
                 />
                 {/* Red Progress Bar at bottom of thumbnail */}
                 <div className={styles.progressContainer}>
-                   {/* Random width for effect */}
-                  <div className={styles.progressBar} style={{width: `${Math.random() * 60 + 20}%`}}></div>
+                  {/* Random width for effect */}
+                  <div className={styles.progressBar} style={{ width: `${Math.random() * 60 + 20}%` }}></div>
                 </div>
               </div>
 
@@ -92,7 +139,7 @@ const HistoryContent = () => {
           No videos found matching "{searchTerm}"
         </div>
       )}
-      
+
     </div>
   );
 };

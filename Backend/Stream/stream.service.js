@@ -1,6 +1,8 @@
 import { getVideoById, getVideos } from './stream.dto.js';
-import { isLiked } from './stream.dto.js'
+import { isLiked,isSaved } from './stream.dto.js'
 import {User} from '../Models/User.js';
+import Video from '../Models/Video.js';
+import { historyService } from '../VideoControls/videoControl.service.js';
 
 import jwt from "jsonwebtoken";
 import fs from 'fs/promises';
@@ -14,20 +16,27 @@ export const getVideoService = async (token, videoId) => {
             message: "no video with the given videoId",
         }
     }
-    
+    let liked = false;
+    let saved = false;
+
     if (token === undefined) {
         console.log("token not there while sending video");
-        video.isLiked = false;
+        liked = false;
+        saved = false;
     } else {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log(decoded);
+        console.log("in get video service: ",decoded);
         
-        video.isLiked = await isLiked(decoded._id, videoId);
+        liked = await isLiked(decoded._id, videoId) != null;
+        saved = await isSaved(decoded._id, videoId) != null;
+        await historyService(decoded._id,videoId);
     }
     return {
         success: true,
         message: "video details fetched successfully",
         video: video,
+        isLiked:liked,
+        isSaved:saved
     }
 }
 
@@ -35,8 +44,8 @@ export const loadMoreVideosService = async (pageNo , user) => {
     const limit = 20;
     const videos = await getVideos(pageNo);
     
-    let fetched;
-    if(pageNo == 0) {
+    let fetched=null;
+    if(pageNo == 0 && user) {
         fetched = await User.findById(user._id);
     }
     return {
@@ -56,7 +65,7 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
             message: "Video not found",
         };
     }
-
+    
     try {
         // --- File Reading Step ---
         // Construct the path to the original master manifest file
@@ -81,9 +90,8 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
 
                 // Construct the new, absolute, signed URL
                 // Note: The token is passed as a query parameter to your /manifest endpoint
-                return `/stream/manifest?token=${resourceToken}`; //the leading / importance 💀
+                return `/stream/manifest?token=${resourceToken}`;
             }
-            // Keep comments and tags as they are
             return line;
         });
 
@@ -160,3 +168,76 @@ export const sendSegmentService = async (token) => {
         return { success: false, status: 500, message: "Internal server error." };
     }
 };
+
+
+export const recomendedVideoService = async (videoId) => {
+    try {
+        const video = await getVideoById(videoId);
+        if (!video) {
+            return { success: false, status: 404, message: "Video not found" };
+        }
+
+        const genres = Array.isArray(video.genre) ? video.genre : (video.genre ? [video.genre] : []);
+        console.log("genres: ",genres);
+        
+        const videosByGenre = {};
+
+        for (const g of genres) {
+            const vids = await Video.find({ genre: g, _id: { $ne: video._id } })
+                .sort({ uploadTime: -1 })
+                .limit(5)
+                .select('_id title likesCount channel')
+                .populate({ path: 'channel', select: 'name' })
+                .lean();
+
+            videosByGenre[g] = vids.map(v => ({
+                _id: v._id,
+                title: v.title,
+                likesCount: v.likesCount,
+                channel: v.channel ? v.channel.name : null
+            }));
+        }
+
+        console.log("Recommended videos by genre: ", videosByGenre);
+        
+        return { 
+            success: true, 
+            status: 200,
+            message: "Recommended videos fetched", 
+            videos: videosByGenre
+        };
+    } catch (error) {
+        console.error("Error in recomendedVideoService:", error);
+        return { success: false, status: 500, message: "Internal server error." };
+    }
+}
+
+export const SearchVideosService = async (query,pageNo) => {
+    try {
+        const limit = 20;
+        const videos = await Video.find({ title: { $regex: query, $options: 'i' } })
+            .sort({ uploadTime: -1 })
+            .skip(pageNo * limit)
+            .limit(limit)
+            .select('_id title likesCount channel')
+            .populate({ path: 'channel', select: 'name' })
+            .lean();
+        const formattedVideos = videos.map(v => ({
+            _id: v._id,
+            title: v.title, 
+            likesCount: v.likesCount,
+            channel: v.channel ? v.channel.name : null
+        }));
+        console.log("formatted: ",formattedVideos);
+        return {
+            success: true,
+            status: 200,
+            message: "Search results fetched",
+            videos: formattedVideos,
+            hasNext: (videos.length === limit)
+        };
+    } catch (error) {
+        console.error("Error in SearchVideosService:", error);
+        return { success: false, status: 500, message: "Internal server error." };
+    }
+}

@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 
 import  {User}  from '../Models/User.js';
+import {Channel} from '../Models/Channel.js'
 import { PendingUser } from '../Models/PendingUser.js';
 import nodemailer from 'nodemailer';
 
@@ -147,6 +148,11 @@ export const VerifyEmailService = async (email, code) => {
                     email: pendingUser.email,
                     password: pendingUser.password
                 });
+
+                // Create a channel here
+                await Channel.create({
+                    owner:user,
+                })
 
                 await PendingUser.deleteOne({ email: email });
 

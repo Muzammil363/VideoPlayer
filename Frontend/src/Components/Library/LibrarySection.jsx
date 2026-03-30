@@ -20,7 +20,7 @@ const LibrarySection = ({ title, icon, videos }) => {
             <div key={video.id} className={styles.card}>
               <div className={styles.thumbnailContainer}>
                 <img 
-                  src={`https://picsum.photos/seed/${video.id + 500}/640/360`} 
+                  src={video.thumbnail} 
                   alt="thumbnail" 
                   className={styles.thumbnailImage} 
                 />

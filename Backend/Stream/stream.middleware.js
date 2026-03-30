@@ -11,6 +11,8 @@ export const streamMiddleware = (req, res, next) => {
         req.user = decoded;
         next();
     } catch (error) {
-        return res.status(401).json({ message: "Unauthorized: Invalid token" });
+        // return res.status(401).json({ message: "Unauthorized: Invalid token" });
+        req.user = null;
+        next();
     }
 };

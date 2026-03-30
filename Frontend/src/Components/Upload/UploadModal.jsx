@@ -57,25 +57,15 @@ const UploadModal = ({ isOpen, onClose }) => {
       // Files
       formData.append('video', videoFile);      // Backend will read originalName, mimeType, size
       formData.append('thumbnail', thumbnailFile); 
-
-      // Note: 'uploadedBy' is usually handled by the backend checking the JWT Token
-      // 'likesCount' defaults to 0 on backend
-      // 'm3u8Path' and 'folderPath' are generated on backend after processing
-
-      console.log("Submitting FormData...");
+      console.log("Submitting FormData...",formData);
       
-      // --- 2. API Call (Commented out for now) ---
-      // const response = await fetch('http://localhost:5000/api/upload', {
-      //   method: 'POST',
-      //   body: formData, // No Content-Type header needed, browser adds it for FormData
-      // });
-      
-      // Simulate delay
-      setTimeout(() => {
-        alert("Upload functionality would happen here!");
-        setIsUploading(false);
-        onClose(); // Close modal on success
-      }, 1500);
+      let response = await fetch('http://localhost:3000/upload/video',{
+        method:'POST',
+        credentials:'include',
+        body:formData
+      });
+      let data = await response.json();
+      console.log("response data: ",data);
 
     } catch (error) {
       console.error("Upload failed", error);

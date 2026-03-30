@@ -65,6 +65,18 @@ const videoSchema = new mongoose.Schema({
     required: true,
     default: null,
   },
+  views : {
+    type: Number,
+    default: 0,
+    required: true,
+    index: true, // optional for sorting most viewed
+  },
+  channel:{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Channel",
+    required: true,
+    index: true,
+  }
 });
 
-export default mongoose.model("Video", videoSchema);
+export default mongoose.model("Video", videoSchema); // even i set Video correctly

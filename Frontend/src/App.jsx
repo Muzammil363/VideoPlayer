@@ -11,11 +11,9 @@ import HistoryPage from './pages/History.jsx'
 import ProfilePage from './pages/Profile.jsx'
 import AuthPage from './pages/Auth.jsx'
 import VideoPlayerPage from './pages/VideoPlayer.jsx'
-
+import SearchPage from './pages/SearchPage.jsx'
 
 function App() {
-  const [count, setCount] = useState(0)
-
   const router = createBrowserRouter([
     {
       path: "/",
@@ -28,6 +26,10 @@ function App() {
     {
       path:'/video/:videoId',
       element:<VideoPlayerPage />
+    },
+    {
+      path:"/search/:searchQuery",
+      element: <SearchPage />
     },
     {
       path:"/u",

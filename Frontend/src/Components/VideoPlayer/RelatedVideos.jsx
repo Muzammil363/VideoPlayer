@@ -1,4 +1,4 @@
-import React from 'react';
+import React,{useState,useEffect} from 'react';
 import styles from '../../styles/VideoPlayer.module.css';
 
 const mockRelated = [
@@ -11,22 +11,53 @@ const mockRelated = [
   { id: 107, title: "React Hooks Explained", channel: "Ben Awad", views: "800K" },
 ];
 
-const RelatedVideos = () => {
+const RelatedVideos = ({videoId}) => {
+  const [relatedVideos, setRelatedVideos] = useState([]);
+
+  // useEffect hook to load 
+  useEffect(()=>{
+    async function fetchRelatedVideos() {
+      try {
+        const response = await fetch(`http://localhost:3000/stream/recommendedVideos/${videoId}`, {
+          method: 'GET',
+          credentials: 'include',
+          headers: {
+            "Content-Type": "application/json"
+          }
+        });
+        const data = await response.json();
+        if (data.success) {
+          console.log("Recommended Videos: ", data.videos);
+          
+          const grouped = data.videos || {};
+          const flattened = Object.values(grouped).flat();
+          console.log("Flattened Recommended Videos: ", flattened);
+          setRelatedVideos(flattened);
+        } else {
+          console.error("Failed to fetch recommended videos: ", data.error);
+        }
+      } catch (error) {
+        console.error("Error fetching recommended videos: ", error);
+      }
+    }
+    if (videoId) fetchRelatedVideos();
+  },[videoId])
+
   return (
     <div className={styles.relatedContainer}>
       <h3 style={{fontSize:'1rem', marginBottom:'10px'}}>You might like</h3>
       
-      {mockRelated.map((video) => (
-        <div key={video.id} className={styles.relatedCard}>
+      {(relatedVideos.length ? relatedVideos : mockRelated).map((video) => (
+        <div key={video._id || video.id} className={styles.relatedCard}>
           <img 
-            src={`https://picsum.photos/seed/${video.id}/320/180`} 
+            src={video.thumbnailPath ? video.thumbnailPath : `https://picsum.photos/seed/${video._id || video.id}/320/180`} 
             className={styles.relatedThumb} 
             alt="thumb" 
           />
           <div className={styles.relatedDetails}>
             <span className={styles.relatedTitle}>{video.title}</span>
-            <span className={styles.relatedMeta}>{video.channel}</span>
-            <span className={styles.relatedMeta}>{video.views} views • 2 days ago</span>
+            <span className={styles.relatedMeta}>{video.channel || video.channelName}</span>
+            <span className={styles.relatedMeta}>{video.likesCount ? `${video.likesCount} likes` : ''}</span>
           </div>
         </div>
       ))}

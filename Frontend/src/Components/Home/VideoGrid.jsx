@@ -3,10 +3,11 @@ import { useState } from 'react';
 import styles from '../../styles/Home.module.css';
 import { Link } from 'react-router-dom';
 
+import { formatDistanceToNowStrict , parseISO} from 'date-fns';
+
 // Mock Data to simulate a database response
 
 function thumbnailExtractor(url) {
-  // Logic to extract thumbnail from video URL
   const thumbnail = url.split("\\")[2];
   console.log("thumbnail :",thumbnail);
   return `http://localhost:3000/thumbnails/${thumbnail}`;
@@ -34,8 +35,9 @@ const VideoGrid = ({videos}) => {
               <div className={styles.channelIcon}></div>
               <div className={styles.meta}>
                 <h3 className={styles.videoTitle}>{video.title}</h3>
-                <span className={styles.channelName}>{video.channel}</span>
-                <span className={styles.views}>{video.views} • {video.time}</span>
+                <span className={styles.channelName}>{video.channel.name ? video.channel.name : video.channel}</span>
+                <span className={styles.views}>{video.views || "0 views"} • 
+                  {video.uploadTime ? formatDistanceToNowStrict(parseISO(video.uploadTime), { addSuffix: true }) : video.time}</span>
               </div>
             </div>
           </div>

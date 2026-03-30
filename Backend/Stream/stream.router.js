@@ -5,17 +5,22 @@ import {
     sendManifest,
     sendSegment,
     sendMasterManifest,
-    sendVideo
+    sendVideo,
+    recomendedVideosController,
+    SearchVideosController
 } from "./stream.controller.js";
 
 import {
     streamMiddleware
 } from "./stream.middleware.js";
 
+
 const router = express.Router();
 /*
     Pagination for videos and middleware 
 */
+
+router.get("/recommendedVideos/:videoId", recomendedVideosController);
 
 router.get("/videos/:pageNo", streamMiddleware, loadMoreVideosController);
 
@@ -25,4 +30,5 @@ router.get("/masterManifest/:videoId",sendMasterManifest); //check whether the r
 router.get("/manifest",sendManifest); //validate token and reqrite the output.m3u8 and send it
 router.get("/segment",sendSegment); //validate token and send the sengment file
 
+router.get("/search/:query", streamMiddleware, SearchVideosController); //search for videos based on the query and return the results
 export default router;

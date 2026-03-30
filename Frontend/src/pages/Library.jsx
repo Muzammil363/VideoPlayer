@@ -7,11 +7,28 @@ import Sidebar from '../components/Home/Sidebar';
 
 // New Library Section Component
 import LibrarySection from '../Components/Library/LibrarySection.jsx';
+import { formatDistanceToNowStrict, parseISO } from 'date-fns';
+
+// --- Mock Data ---
+const watchLaterVideosData = [
+  { id: 101, title: "Advanced React Patterns", channel: "Frontend Masters", views: "12K", time: "5 days ago", duration: "45:00" },
+  { id: 102, title: "History of the Internet", channel: "Tech History", views: "1.2M", time: "2 years ago", duration: "1:15:20" },
+  { id: 103, title: "Best VS Code Extensions 2025", channel: "Code Life", views: "50K", time: "1 week ago", duration: "10:05" },
+  { id: 104, title: "Learn Docker in 1 Hour", channel: "DevOps Simplified", views: "300K", time: "4 months ago", duration: "1:00:00" }
+];
+
+const likedVideosData = [
+  { id: 201, title: "Funny Cat Compilation", channel: "MeowTube", views: "5M", time: "1 year ago", duration: "08:12" },
+  { id: 202, title: "Lo-Fi Hip Hop Radio", channel: "ChilledCow", views: "Live", time: "Now", duration: "Live" },
+  { id: 203, title: "How to Cook Perfect Steak", channel: "Chef John", views: "800K", time: "3 weeks ago", duration: "12:30" },
+];
 
 const LibraryPage = () => {
   // --- Sidebar Logic ---
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [likedVideos, setLikedVideos] = useState([]);
+  const [watchLaterVideos, setWatchLaterVideos] = useState([]);
 
   useEffect(() => {
     const handleResize = () => {
@@ -23,26 +40,84 @@ const LibraryPage = () => {
         setIsSidebarOpen(true);
       }
     };
-    handleResize(); 
+    handleResize();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
-  // --- Mock Data ---
-  const watchLaterVideos = [
-    { id: 101, title: "Advanced React Patterns", channel: "Frontend Masters", views: "12K", time: "5 days ago", duration: "45:00" },
-    { id: 102, title: "History of the Internet", channel: "Tech History", views: "1.2M", time: "2 years ago", duration: "1:15:20" },
-    { id: 103, title: "Best VS Code Extensions 2025", channel: "Code Life", views: "50K", time: "1 week ago", duration: "10:05" },
-    { id: 104, title: "Learn Docker in 1 Hour", channel: "DevOps Simplified", views: "300K", time: "4 months ago", duration: "1:00:00" }
-  ];
+  function renderVideos(apiResponse, type) {
+    const formattedVideos = apiResponse.map((item) => {
+      const video = item.videoId;
 
-  const likedVideos = [
-    { id: 201, title: "Funny Cat Compilation", channel: "MeowTube", views: "5M", time: "1 year ago", duration: "08:12" },
-    { id: 202, title: "Lo-Fi Hip Hop Radio", channel: "ChilledCow", views: "Live", time: "Now", duration: "Live" },
-    { id: 203, title: "How to Cook Perfect Steak", channel: "Chef John", views: "800K", time: "3 weeks ago", duration: "12:30" },
-  ];
+      const rawPath = video.thumbnailPath || "";
+      const thumbnail = rawPath.split("\\")[2];
+      console.log(thumbnail);
+
+      return {
+        id: video._id,
+        title: video.title,
+        channel: video.channel?.name || "Unknown Channel",
+        views: video.views >= 1000 ? `${(video.views / 1000).toFixed(1)}K` : video.views.toString(),
+        time: formatRelativeTime(video.uploadTime),
+        duration: video.duration || "00:00",
+        thumbnail: `http://localhost:3000/thumbnails/${thumbnail}`
+      };
+    });
+    if (type === "liked") {
+      setLikedVideos(formattedVideos);
+    }
+    else {
+      setWatchLaterVideos(formattedVideos);
+    }
+  }
+
+  // Helper to handle the "time ago" logic UPDATE THIS LATER
+  function formatRelativeTime(dateString) {
+    return formatDistanceToNowStrict(parseISO(dateString), { addSuffix: true })
+  }
+  /*
+    API call to get liked videos
+   */
+  useEffect(() => {
+    async function loadData() {
+      let response = await fetch("http://localhost:3000/user/liked-videos", {
+        method: 'GET',
+        credentials: "include",
+        headers: {
+          "content-type": "application/json"
+        }
+      })
+
+      let resData = await response.json();
+      if (resData.success) {
+        renderVideos(resData.data,"liked");
+      }
+    }
+    loadData();
+  }, [])
+
+  /*
+    API call to get watch later
+   */
+  useEffect(() => {
+    async function loadData() {
+      let response = await fetch("http://localhost:3000/user/watch-later", {
+        method: 'GET',
+        credentials: "include",
+        headers: {
+          "content-type": "application/json"
+        }
+      })
+
+      let resData = await response.json();
+      if (resData.success) {
+        renderVideos(resData.data,"watchlater");
+      }
+    }
+    loadData();
+  }, [])
 
   // --- Icons (SVGs) ---
   const watchLaterIcon = (
@@ -61,26 +136,26 @@ const LibraryPage = () => {
 
   return (
     <div className={`${styles.container} ${!isSidebarOpen && !isMobile ? styles.containerClosed : ''}`}>
-      
+
       <TopBar toggleSidebar={toggleSidebar} />
 
-      <div style={{gridArea: 'sidebar'}}> 
-         {(isSidebarOpen || !isMobile) && <Sidebar />}
+      <div style={{ gridArea: 'sidebar' }}>
+        {(isSidebarOpen || !isMobile) && <Sidebar />}
       </div>
 
       <main className={styles.contentArea}>
         {/* Section 1: Watch Later */}
-        <LibrarySection 
-          title="Watch Later" 
-          icon={watchLaterIcon} 
-          videos={watchLaterVideos} 
+        <LibrarySection
+          title="Watch Later"
+          icon={watchLaterIcon}
+          videos={watchLaterVideos}
         />
 
         {/* Section 2: Liked Videos */}
-        <LibrarySection 
-          title="Liked Videos" 
-          icon={likedIcon} 
-          videos={likedVideos} 
+        <LibrarySection
+          title="Liked Videos"
+          icon={likedIcon}
+          videos={likedVideos}
         />
       </main>
 

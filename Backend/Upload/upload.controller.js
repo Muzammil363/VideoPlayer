@@ -16,7 +16,7 @@ export const uploadVideoController = async (req, res) => {
         if (!storedFileName || !uniqueFolderPath || !file) {
             throw new Error("storedFileName or uniqueFolderPath or file is not coming from req");
         }
-        console.log("req.user:  ",req.user);
+        console.log("req.user at upload video controller:  ",req.user);
         // return res.status(200).json({ success: true, message: "File received, processing..." });
         const newVideo = await uploadVideoService(storedFileName, uniqueFolderPath, file, title, description, req.user._id, genre, req.files.thumbnail?.[0]);
 

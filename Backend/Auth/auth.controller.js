@@ -34,11 +34,13 @@ export const LoginController=async (req,res)=>{
 export const SignupController=async (req,res)=>{
     console.log(req.body);
     const {username,email,password}=req.body
+
     if(!username || !email || !password){
         return res.status(400).json({message:"Username, Email and Password are required"});
     }
 
     let response=await SignupService(username,email,password);
+    
     return res.status(response.status).json({
         success:response.success,
         message:response.message,

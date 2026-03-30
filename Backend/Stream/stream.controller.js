@@ -3,7 +3,9 @@ import {
     sendSegmentService,
     loadMoreVideosService,
     getVideoService,
-    sendMasterManifestService
+    sendMasterManifestService,
+    recomendedVideoService,
+    SearchVideosService
 } from "./stream.service.js";
 
 export const loadMoreVideosController = async (req, res) => {
@@ -51,6 +53,8 @@ export const sendVideo = async (req, res) => {
         success: true,
         message: response.message,
         video: response.video,
+        isLiked : response.isLiked,
+        isSaved : response.isSaved
     });
 }
 
@@ -63,7 +67,8 @@ export const sendMasterManifest = async (req, res) => {
                 error: "videoId cannot be undefined"
             });
         }
-
+        
+        console.log("cookies: ",req.cookies);
         // Pass the user's auth token (if it exists) to the service for validation
         const response = await sendMasterManifestService(videoId, req.cookies.token);
 
@@ -138,6 +143,64 @@ export const sendSegment = async (req, res) => {
         res.sendFile(response.path) //i dont know whether this is correct or not
     } catch (error) {
         console.log("Server Error in sendSegment: " + error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal Server Error",
+        });
+    }
+}
+
+
+export const recomendedVideosController = async (req, res) => {
+    try {
+        // get videoId
+        const { videoId } = req.params;
+        if (!videoId) {
+            return res.status(400).json({
+                success: false,
+                error: "videoId is required",
+            });
+        }
+
+        const response = await recomendedVideoService(videoId);
+
+        return res.status(response.status).json({
+            success: response.success,
+            message: response.message,
+            videos: response.videos
+        });
+        
+    } catch (error) {
+        console.log("Server Error in recomendedVideosController: " + error);
+        return res.status(500).json({
+            success: false,
+            error: "Internal Server Error",
+        });
+    }
+}
+
+export const SearchVideosController = async (req, res) => {
+    try {
+        const { query } = req.params;
+        if (!query) {
+            return res.status(400).json({
+                success: false,
+                error: "query is required",
+            });
+        }
+        const user=req.user;
+        const response = await SearchVideosService(query,user);
+        console.log("response: ",response);
+        
+        return res.status(response.status).json({
+            success: response.success,
+            message: response.message,
+            videos: response.videos,
+            user: response.user,
+            hasNext: response.hasNext,
+        });
+    } catch (error) {
+        console.log("Server Error in SearchVideosController: " + error);
         return res.status(500).json({
             success: false,
             error: "Internal Server Error",

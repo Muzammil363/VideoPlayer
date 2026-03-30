@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 import { useSelector,useDispatch } from 'react-redux';
-import { profileActions } from '../Redux/store';
+import { authActions, profileActions } from '../Redux/store';
 
 import TopBar from '../components/Home/TopBar';
 import Sidebar from '../components/Home/Sidebar';
@@ -62,7 +62,14 @@ const HomePage = () => {
           // store update with data.user.username
           // Move this to RootLayout later
           setVideos((prev)=>([...prev,...data.videos]));
-          dispatch(profileActions.setProfileData(data.user));
+          
+          if(data.user != null) {
+            dispatch(authActions.login());
+            dispatch(profileActions.setProfileData(data.user));
+          }
+          else {
+            dispatch(authActions.logout());
+          }
         }
         console.log("Fetched videos:", data); // To be removed later
       } catch (error) {
@@ -85,7 +92,7 @@ const HomePage = () => {
       `}
     >
       {/* Pass toggle function to TopBar */}
-      <TopBar toggleSidebar={toggleSidebar} />
+      <TopBar toggleSidebar={toggleSidebar} query=''/>
 
       {/* If mobile and open, show overlay background */}
       {isMobile && isSidebarOpen && (
