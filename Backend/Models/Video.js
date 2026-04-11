@@ -16,9 +16,16 @@ const videoSchema = new mongoose.Schema({
     required: true 
   },
 
+  status: {
+    type:String,
+    enum: ['queued', 'processing', 'ready', 'failed'],
+    default: 'queued',
+    required: true
+  },
+
   m3u8Path: {
     type: String,
-    required: true,
+    default: null,
   },
   folderPath: {
     type: String,
@@ -76,7 +83,7 @@ const videoSchema = new mongoose.Schema({
     ref: "Channel",
     required: true,
     index: true,
-  }
+  },
 });
 
 export default mongoose.model("Video", videoSchema); // even i set Video correctly

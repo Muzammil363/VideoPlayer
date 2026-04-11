@@ -1,6 +1,18 @@
+import crypto from 'crypto';
+import Video from '../Models/Video.js';
+import { Channel } from '../Models/Channel.js';
 import { 
     uploadVideoService,
 } from './upload.service.js';
+
+import { Queue } from 'bullmq';
+import { PutObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { s3Client } from '../Config/awsConfig.js';
+
+const videoQueue = new Queue('videoQueue', {
+    connection: { host: '127.0.0.1', port: 6379 }
+});
 
 export const uploadVideoController = async (req, res) => {
     try {
@@ -30,5 +42,142 @@ export const uploadVideoController = async (req, res) => {
     } catch (err) {
         console.error("Upload Handler Error:", err);
         res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+export const uploadURLController = async (req, res) => {
+    try {
+        const { 
+            videoFilename, 
+            videoContentType, 
+            thumbnailFilename, 
+            thumbnailContentType 
+        } = req.body;
+
+        if (!videoContentType?.startsWith('video/') || !thumbnailContentType?.startsWith('image/')) { 
+            return res.status(400).json({ 
+                success: false, 
+                error: "Invalid file types. Please provide a valid video and image." 
+            });
+        }
+
+        const uniqueId = `${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+        const folderPath = `uploads/${uniqueId}`; 
+
+        const videoKey = `${folderPath}/video_${videoFilename.replace(/\s+/g, '_')}`;
+        const thumbnailKey = `${folderPath}/thumb_${thumbnailFilename.replace(/\s+/g, '_')}`;
+
+        const videoCommand = new PutObjectCommand({
+            Bucket: process.env.AWS_RAW_BUCKET_NAME,
+            Key: videoKey,
+            ContentType: videoContentType,
+        });
+
+        const thumbnailCommand = new PutObjectCommand({
+            Bucket: process.env.AWS_THUMBNAILS_BUCKET_NAME,
+            Key: thumbnailKey,
+            ContentType: thumbnailContentType,
+        });
+
+        const [videoUploadUrl, thumbnailUploadUrl] = await Promise.all([
+            getSignedUrl(s3Client, videoCommand, { expiresIn: 300 }),
+            getSignedUrl(s3Client, thumbnailCommand, { expiresIn: 300 })
+        ]);
+
+        return res.json({
+            success: true,
+            folderPath, // Frontend needs this to send to your 'Save to MongoDB' endpoint
+            video: {
+                uploadUrl: videoUploadUrl,
+                s3Key: videoKey
+            },
+            thumbnail: {
+                uploadUrl: thumbnailUploadUrl,
+                s3Key: thumbnailKey
+            }
+        });
+
+    } catch (error) {
+        console.error("Error generating URLs:", error);
+        return res.status(500).json({ success: false, error: "Failed to generate upload URLs" });
+    }
+};
+
+
+export const processVideoController = async (req, res) => {
+    try {
+        const {
+            title,
+            description,
+            genre,
+            folderPath,
+            videoKey,
+            thumbnailPath,
+            originalName,
+            mimeType,
+            size,
+        } = req.body;
+
+        if (!req.user || !req.user._id) {
+            return res.status(403).json({ error: 'Unauthorized' });
+        }
+
+        if (!title || !folderPath || !videoKey || !thumbnailPath || !originalName || !mimeType || !size) {
+            return res.status(400).json({ error: 'Missing required video metadata' });
+        }
+
+        const genreArray = Array.isArray(genre)
+            ? genre
+            : typeof genre === 'string' && genre.length > 0
+                ? [genre]
+                : [];
+
+        const channel = await Channel.findOne({ owner: req.user._id }).select('_id');
+        if (!channel) {
+            return res.status(400).json({ error: 'User channel not found' });
+        }
+
+        // Convert thumbnail S3 key to full URL
+        const thumbnailUrl = `https://${process.env.AWS_THUMBNAILS_BUCKET_NAME}.s3.${process.env.AWS_REGION}.amazonaws.com/${thumbnailPath}`;
+
+        const newVideo = new Video({
+            title,
+            originalName,
+            mimeType,
+            size,
+            uploadTime: new Date(),
+            status: 'queued',
+            m3u8Path: null,
+            folderPath,
+            description: description || '',
+            uploadedBy: req.user._id,
+            likesCount: 0,
+            genre: genreArray,
+            thumbnailPath: thumbnailUrl,
+            views: 0,
+            channel: channel._id,
+        });
+
+        await newVideo.save();
+
+        const jobId = `vid_${Date.now()}`;
+        const job = await videoQueue.add('transcode', {
+            s3Key: videoKey,
+            videoId: jobId,
+            dbVideoId: newVideo._id,
+        });
+
+        console.log(`🚀 Job ${job.id} added to queue for video ${jobId}`);
+
+        return res.status(202).json({
+            success: true,
+            message: 'Video processing queued successfully',
+            jobId: job.id,
+            videoId: newVideo._id,
+        });
+
+    } catch (error) {
+        console.error('Error queueing video:', error);
+        return res.status(500).json({ error: 'Failed to queue video processing' });
     }
 };

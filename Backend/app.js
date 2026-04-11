@@ -9,7 +9,10 @@ import streamRouter from './Stream/stream.router.js';
 import userRouter from './User/user.router.js';
 import videoControls from './VideoControls/videoControl.router.js'
 
+import './Config/awsConfig.js';
 import {connectMongoDB} from './Config/Mongo.js';
+
+import { Queue } from 'bullmq';
 
 dotenv.config();
 await connectMongoDB();
@@ -22,7 +25,25 @@ app.use(cookieParser());
 app.use(cors({
     origin: 'http://localhost:5173',
     credentials: true,
-}))
+}));
+
+export const redisConnection = {
+    host: "127.0.0.1",
+    port: 6379
+};
+
+const videoQueue = new Queue("videoQueue", {
+    connection: redisConnection,
+    defaultJobOptions: {
+        removeOnComplete: true,
+        removeOnFail: true,
+        attempts: 3,
+        backoff: {
+            type: 'exponential',
+            delay: 5000,
+        },
+    },  
+});
 
 app.use('/auth', authRouter);
 app.use("/user", userRouter);
