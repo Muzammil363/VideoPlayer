@@ -66,16 +66,7 @@ const MyChannelPage = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className={`${styles.container} ${!isSidebarOpen && !isMobile ? styles.containerClosed : ''}`}>
-      
-      {/* 1. Shared Header */}
-      <TopBar toggleSidebar={toggleSidebar} />
-
-      {/* 2. Shared Sidebar (Hidden/Overlay logic for mobile) */}
-      <div style={{gridArea: 'sidebar'}}> 
-         {(isSidebarOpen || !isMobile) && <Sidebar />}
-      </div>
-
+      <>
       {/* 3. Page Specific Content */}
       <main className={styles.contentArea}>
         <ChannelInfo onUploadClick={() => setIsUploadModalOpen(true)} />
@@ -86,8 +77,7 @@ const MyChannelPage = () => {
         isOpen={isUploadModalOpen} 
         onClose={() => setIsUploadModalOpen(false)} 
       />
-
-    </div>
+      </>
   );
 };
 

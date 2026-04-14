@@ -12,17 +12,16 @@ const VideoPlayerPage = () => {
   const { videoId } = useParams();
   // const SAMPLE_VIDEO = `http://localhost:3000/stream/masterManifest/${videoId}`;
   const SAMPLE_VIDEO = 'https://muzammil-processed-video-bucket-2026.s3.ap-south-1.amazonaws.com/videos/vid_1773220707588/master.m3u8'
+  const THUMBNAIL_URL = 'https://muzammil-thumbnails-storage-bucket.s3.ap-south-1.amazonaws.com/uploads/1775913778310-61a8ac09/thumb_ID_card.jpeg'; // Placeholder thumbnail
 
   return (
     <>
-      <TopBar toggleSidebar={() => { }} /> {/* Empty toggle since we might not show sidebar here */}
-
       <div className={styles.container}>
         <div className={styles.layoutGrid}>
 
           {/* LEFT COLUMN: Player + Details */}
           <div>
-            <CustomPlayer videoSrc={SAMPLE_VIDEO} />
+            <CustomPlayer videoSrc={SAMPLE_VIDEO} thumbnailUrl={THUMBNAIL_URL} />
             <VideoDetails videoId={videoId} />
           </div>
 

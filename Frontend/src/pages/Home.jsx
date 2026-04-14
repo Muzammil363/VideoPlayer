@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
-
-import { useSelector,useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { authActions, profileActions } from '../Redux/store';
-
-import TopBar from '../components/Home/TopBar';
-import Sidebar from '../components/Home/Sidebar';
 import VideoGrid from '../components/Home/VideoGrid';
-import styles from '../styles/Home.module.css';
 
 const mockVideos = [
   { id: 1, title: "Building a YouTube Clone in React", channel: "Code Master", views: "120K views", time: "2 days ago", duration: "12:05" },
@@ -20,30 +15,8 @@ const mockVideos = [
 ];
 
 const HomePage = () => {
-  // Default: Open on desktop, closed on mobile (handled by media query logic mostly)
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
   const [videos, setVideos] = useState(mockVideos);
-
-  const dispatch=useDispatch();
-
-  // Check screen size to auto-close on mobile load
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth <= 768) {
-        setIsMobile(true);
-        setIsSidebarOpen(false); // Default close on mobile
-      } else {
-        setIsMobile(false);
-        setIsSidebarOpen(true); // Default open on desktop
-      }
-    };
-    // Run once on mount
-    handleResize();
-
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+  const dispatch = useDispatch();
 
   // API call to fetch videos
   useEffect(() => {
@@ -80,34 +53,7 @@ const HomePage = () => {
   }, []);
   
 
-  const toggleSidebar = () => {
-    setIsSidebarOpen(!isSidebarOpen);
-  };
-
-  return (
-    <div
-      className={`
-        ${styles.container} 
-        ${!isSidebarOpen && !isMobile ? styles.containerClosed : ''}
-      `}
-    >
-      {/* Pass toggle function to TopBar */}
-      <TopBar toggleSidebar={toggleSidebar} query=''/>
-
-      {/* If mobile and open, show overlay background */}
-      {isMobile && isSidebarOpen && (
-        <div className={styles.overlay} onClick={() => setIsSidebarOpen(false)}></div>
-      )}
-
-      {/* Sidebar logic: Sticky on desktop, Fixed overlay on Mobile */}
-      <div className={isMobile && isSidebarOpen ? styles.mobileSidebarOpen : ''}>
-        {/* Only render sidebar if it's open OR if we are on desktop (where we hide via CSS grid width) */}
-        {(isSidebarOpen || !isMobile) && <Sidebar />}
-      </div>
-
-      <VideoGrid videos={videos} />
-    </div>
-  );
+  return <VideoGrid videos={videos} />;
 };
 
 export default HomePage;

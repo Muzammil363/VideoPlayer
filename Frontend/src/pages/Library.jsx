@@ -135,14 +135,7 @@ const LibraryPage = () => {
   );
 
   return (
-    <div className={`${styles.container} ${!isSidebarOpen && !isMobile ? styles.containerClosed : ''}`}>
-
-      <TopBar toggleSidebar={toggleSidebar} />
-
-      <div style={{ gridArea: 'sidebar' }}>
-        {(isSidebarOpen || !isMobile) && <Sidebar />}
-      </div>
-
+      <>
       <main className={styles.contentArea}>
         {/* Section 1: Watch Later */}
         <LibrarySection
@@ -156,10 +149,10 @@ const LibraryPage = () => {
           title="Liked Videos"
           icon={likedIcon}
           videos={likedVideos}
-        />
+          />
       </main>
 
-    </div>
+      </>
   );
 };
 

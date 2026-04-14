@@ -172,7 +172,6 @@ a {
 /* --- Main Content --- */
 .mainContent {
   grid-area: content;
-  padding: 24px;
   overflow-y: auto;
 }
 

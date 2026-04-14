@@ -6,7 +6,9 @@ import { upload } from './utils/multer.js';
 import { 
     uploadVideoController,
     uploadURLController,
-    processVideoController
+    processVideoController,
+    uploadMultipartURLController,
+    completeMultipartUploadController
 } from './upload.controller.js';
 
 import { 
@@ -24,6 +26,11 @@ router.post('/video', checkToken, requireUser,  upload.fields([
 router.post("/upload-url", checkToken, requireUser, uploadURLController);
 
 router.post("/process-video", checkToken, requireUser, processVideoController);
+
+// new feature 
+router.post("/upload-multipart-url", checkToken, requireUser, uploadMultipartURLController);
+
+router.post("/complete-multipart-upload", checkToken, requireUser,completeMultipartUploadController);
 
 
 export default router;

@@ -31,7 +31,6 @@
 .contentArea {
   grid-area: content;
   overflow-y: auto;
-  padding: 0; /* Padding is handled inside sections */
 }
 
 /* --- Channel Header Section --- */

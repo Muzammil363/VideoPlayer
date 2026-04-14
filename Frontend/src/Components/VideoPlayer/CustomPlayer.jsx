@@ -2,7 +2,8 @@ import React, { useRef, useState, useEffect } from 'react';
 import Hls from 'hls.js';
 import styles from '../../styles/VideoPlayer.module.css';
 
-const CustomPlayer = ({ videoSrc }) => {
+// Added thumbnailUrl as a prop
+const CustomPlayer = ({ videoSrc, thumbnailUrl }) => {
   const videoRef = useRef(null);
   const containerRef = useRef(null);
   const hlsRef = useRef(null);
@@ -14,10 +15,13 @@ const CustomPlayer = ({ videoSrc }) => {
   const [isMuted, setIsMuted] = useState(false);
   const [currentTime, setCurrentTime] = useState("0:00");
   const [duration, setDuration] = useState("0:00");
+  
+  // NEW: Buffering State
+  const [isBuffering, setIsBuffering] = useState(true); // Default to true until data loads
 
   // --- HLS Quality State ---
   const [qualities, setQualities] = useState([]);
-  const [currentQuality, setCurrentQuality] = useState(-1); // -1 usually means 'Auto'
+  const [currentQuality, setCurrentQuality] = useState(-1);
   const [showQualityMenu, setShowQualityMenu] = useState(false);
 
   // --- 1. Initialize HLS & Load Video ---
@@ -28,30 +32,19 @@ const CustomPlayer = ({ videoSrc }) => {
       hls = new Hls();
       hlsRef.current = hls;
 
-      hls.loadSource(videoSrc); // give manifest url to this function
+      hls.loadSource(videoSrc);
       hls.attachMedia(videoRef.current);
 
       hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-        // Extract available levels (qualities)
         const availableQualities = data.levels.map((level, index) => ({
           height: level.height,
           index: index
         }));
         
-        // Add 'Auto' option
         setQualities([{ height: 'Auto', index: -1 }, ...availableQualities.reverse()]);
-        
-        // Auto play on load if desired
-        // videoRef.current.play().catch(() => console.log("User interaction needed"));
-      });
-
-      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
-        // Optional: Update UI to show which level 'Auto' actually selected
-        // console.log("Auto switched to level:", data.level);
       });
 
     } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      // Fallback for Safari (Native HLS)
       videoRef.current.src = videoSrc;
     }
 
@@ -97,11 +90,12 @@ const CustomPlayer = ({ videoSrc }) => {
     const width = bar.clientWidth;
     const newTime = (clickX / width) * videoRef.current.duration;
     
+    // Explicitly set buffering to true when user jumps to a new unbuffered time
+    setIsBuffering(true); 
     videoRef.current.currentTime = newTime;
     setProgress((clickX / width) * 100);
   };
 
-  // --- Real Volume Logic ---
   const handleVolumeChange = (e) => {
     const newVol = parseFloat(e.target.value);
     setVolume(newVol);
@@ -111,7 +105,7 @@ const CustomPlayer = ({ videoSrc }) => {
 
   const toggleMute = () => {
     if (isMuted) {
-      videoRef.current.volume = volume || 0.5; // restore volume
+      videoRef.current.volume = volume || 0.5;
       setIsMuted(false);
     } else {
       videoRef.current.volume = 0;
@@ -119,10 +113,11 @@ const CustomPlayer = ({ videoSrc }) => {
     }
   };
 
-  // --- Real Quality Logic ---
   const handleQualityChange = (index) => {
     if (hlsRef.current) {
-      hlsRef.current.currentLevel = index; // -1 is Auto, 0,1,2 are specific levels
+      // Switching qualities causes a brief buffering period
+      setIsBuffering(true); 
+      hlsRef.current.currentLevel = index;
       setCurrentQuality(index);
       setShowQualityMenu(false);
     }
@@ -143,8 +138,20 @@ const CustomPlayer = ({ videoSrc }) => {
         className={styles.videoElement}
         onTimeUpdate={handleTimeUpdate}
         onClick={togglePlay}
-        poster="https://via.placeholder.com/1280x720/000000/FFFFFF?text=Loading+HLS+Stream..."
+        poster={thumbnailUrl} // The thumbnail will show natively before play starts
+        // --- NEW: Buffer tracking events ---
+        onLoadStart={() => setIsBuffering(true)}
+        onWaiting={() => setIsBuffering(true)}  // Network lag or seeking
+        onPlaying={() => setIsBuffering(false)} // Video is actively playing
+        onCanPlay={() => setIsBuffering(false)} // Enough data buffered to start
       />
+
+      {/* --- NEW: Buffering Overlay --- */}
+      {isBuffering && (
+        <div className={styles.spinnerOverlay}>
+          <div className={styles.spinner}></div>
+        </div>
+      )}
 
       {/* Controls Overlay */}
       <div className={styles.controlsOverlay}>

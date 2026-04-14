@@ -27,17 +27,7 @@ const HistoryPage = () => {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
 
   return (
-    <div className={`${styles.container} ${!isSidebarOpen && !isMobile ? styles.containerClosed : ''}`}>
-      
-      <TopBar toggleSidebar={toggleSidebar} />
-
-      <div style={{gridArea: 'sidebar'}}> 
-         {(isSidebarOpen || !isMobile) && <Sidebar />}
-      </div>
-
       <HistoryContent />
-
-    </div>
   );
 };
 

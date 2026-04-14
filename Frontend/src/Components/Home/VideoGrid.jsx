@@ -7,12 +7,6 @@ import { formatDistanceToNowStrict , parseISO} from 'date-fns';
 
 // Mock Data to simulate a database response
 
-function thumbnailExtractor(url) {
-  const thumbnail = url.split("\\")[2];
-  console.log("thumbnail :",thumbnail);
-  return `http://localhost:3000/thumbnails/${thumbnail}`;
-}
-
 const VideoGrid = ({videos}) => {
   return (
     <main className={styles.mainContent}>
@@ -23,7 +17,8 @@ const VideoGrid = ({videos}) => {
             {/* Thumbnail */}
             <div className={styles.thumbnailContainer}>
               <img 
-                src={video.thumbnailPath ? thumbnailExtractor(video.thumbnailPath) : `https://picsum.photos/seed/${video.id}/640/360`} 
+              {...console.log("updated: ",video.thumbnailPath)}
+                src={video.thumbnailPath || `https://picsum.photos/seed/${video.id}/640/360`} 
                 alt="thumbnail" 
                 className={styles.thumbnailImage} 
               />
