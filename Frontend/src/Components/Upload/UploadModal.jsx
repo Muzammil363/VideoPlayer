@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from '../../styles/UploadModal.module.css';
+import { toast } from 'react-hot-toast';
 
 const GENRES = [
   'Education', 'Entertainment', 'Music', 'Gaming', 'Technology',
@@ -82,7 +83,7 @@ const UploadModal = ({ isOpen, onClose }) => {
   // --- STEP 1: Handshake & Initialize ---
   const startUpload = async () => {
     if (!title || !videoFile || !thumbnailFile) {
-      alert("Please fill in all required fields (Title, Video, Thumbnail)");
+      toast.error("Please fill in all required fields (Title, Video, Thumbnail)");
       return;
     }
 
@@ -141,7 +142,7 @@ const UploadModal = ({ isOpen, onClose }) => {
 
     } catch (error) {
       console.error('Initialization failed', error);
-      alert(`Upload failed: ${error.message}`);
+      toast.error(`Upload failed: ${error.message}`);
       setStatus('idle');
     }
   };
@@ -194,7 +195,7 @@ const UploadModal = ({ isOpen, onClose }) => {
 
     } catch (error) {
       console.error('Chunk upload failed', error);
-      alert(`Network error during upload: ${error.message}`);
+      toast.error(`Network error during upload: ${error.message}`);
       setStatus('paused'); // Auto-pause on error so user can resume
     }
   };
@@ -226,7 +227,7 @@ const UploadModal = ({ isOpen, onClose }) => {
 
       if (!completeResponse.ok) throw new Error(`Failed to finalize upload`);
 
-      alert('Upload complete and video is queued for processing!');
+      toast.success('Upload complete and video is queued for processing!');
 
       // Reset Form
       setTitle('');
@@ -240,7 +241,7 @@ const UploadModal = ({ isOpen, onClose }) => {
 
     } catch (error) {
       console.error('Completion failed', error);
-      alert(`Finalization failed: ${error.message}`);
+      toast.error(`Finalization failed: ${error.message}`);
       setStatus('paused');
     }
   };

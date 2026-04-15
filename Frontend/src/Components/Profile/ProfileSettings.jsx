@@ -1,5 +1,6 @@
 import React, { useState,useEffect } from 'react';
 import styles from '../../styles/Profile.module.css';
+import { toast } from 'react-hot-toast';
 import PasswordModal from './PasswordModal';
 
 const ProfileSettings = () => {
@@ -30,16 +31,16 @@ const ProfileSettings = () => {
 
         if (!res.ok || !responseData.success) {
           console.error('Update username failed', responseData);
-          alert(responseData.message || 'Failed to update username');
+          toast.error(responseData.message || 'Failed to update username');
           return;
         }
         
         console.log("username update: ",responseData.data);
         setUserName(responseData.data.name);
-        alert('Username updated!');
+        toast.success('Username updated!');
       } catch (error) {
         console.error('Error updating username:', error);
-        alert('Error updating username');
+        toast.error('Error updating username');
       }
     })();
   };
@@ -63,16 +64,16 @@ const ProfileSettings = () => {
 
         if (!res.ok || !responseData.success) {
           console.error('Update channel failed', responseData);
-          alert(responseData.message || 'Failed to update channel');
+          toast.error(responseData.message || 'Failed to update channel');
           return;
         }
 
         setChannelName(responseData.data.name);
         setChannelDesc(responseData.data.description);
-        alert('Channel details updated!');
+        toast.success('Channel details updated!');
       } catch (error) {
         console.error('Error updating channel:', error);
-        alert('Error updating channel');
+        toast.error('Error updating channel');
       }
     })();
   };

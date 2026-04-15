@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/MyChannel.module.css';
-
-// Reusing components from Home to keep the layout consistent
-import TopBar from '../components/Home/TopBar';
-import Sidebar from '../components/Home/Sidebar';
+import { toast } from 'react-hot-toast';
 
 // New Components for this page
 import ChannelInfo from '../Components/MyChannel/ChannelInfo';
@@ -57,7 +54,7 @@ const MyChannelPage = () => {
         setMyVideos((prev)=>[...prev , ...data.data])
       }
       else {
-        alert("Failed to load your videos");
+        toast.error("Failed to load your videos");
       }
     }
     loadMyVid();

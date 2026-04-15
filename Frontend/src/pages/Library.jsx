@@ -1,11 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../styles/Library.module.css';
-
-// Reuse Layout Components
-import TopBar from '../components/Home/TopBar';
-import Sidebar from '../components/Home/Sidebar';
-
-// New Library Section Component
 import LibrarySection from '../Components/Library/LibrarySection.jsx';
 import { formatDistanceToNowStrict, parseISO } from 'date-fns';
 
@@ -149,7 +143,7 @@ const LibraryPage = () => {
           title="Liked Videos"
           icon={likedIcon}
           videos={likedVideos}
-          />
+        />
       </main>
 
       </>

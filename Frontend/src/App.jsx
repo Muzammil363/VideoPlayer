@@ -3,6 +3,7 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { createBrowserRouter ,RouterProvider } from 'react-router-dom'
+import { Toaster } from 'react-hot-toast'
 
 import RootLayout from './Components/RootLayout/RootLayout.jsx'
 
@@ -44,6 +45,7 @@ function App() {
   return (
     <>
       <RouterProvider router={router} />
+      <Toaster position="top-right" />
     </>
   )
 }

@@ -1,6 +1,7 @@
 import React,{useState,useEffect} from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import { toast } from 'react-hot-toast';
 
 import styles from '../../styles/Home.module.css';
 
@@ -22,7 +23,7 @@ const TopBar = ({ toggleSidebar,query='' }) => {
     if(searchQuery.trim() !== "") {
       navigate(`/search/${searchQuery}`);
     } else {
-      alert("Nothing to search");
+      toast.error("Nothing to search");
     }
 
     console.log("Search button clicked");

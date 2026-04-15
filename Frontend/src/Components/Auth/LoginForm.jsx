@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from '../../styles/Auth.module.css';
+import { toast } from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -29,8 +30,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
         navigate('/');
       }
       else {
-        alert("Login failed");
-        // Add toast later
+        toast.error('Login failed');
       }
 
     } catch (error) {
@@ -39,7 +39,7 @@ const LoginForm = ({ onSwitchToSignup }) => {
   };
 
   const handleForgotPassword = () => {
-    alert("Redirect to Forgot Password Flow (Enter Email -> OTP -> New Pass)");
+    toast('Redirect to Forgot Password Flow (Enter Email -> OTP -> New Pass)');
   };
 
   return (

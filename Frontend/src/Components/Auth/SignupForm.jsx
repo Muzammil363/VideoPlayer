@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from '../../styles/Auth.module.css';
+import { toast } from 'react-hot-toast';
 
 import { useNavigate } from 'react-router-dom';
 
@@ -25,7 +26,7 @@ const SignupForm = ({ onSwitchToLogin }) => {
   const handleSendOtp = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
     // API Call Simulation
@@ -43,18 +44,17 @@ const SignupForm = ({ onSwitchToLogin }) => {
       console.log("Signup Response: ",data); // To be removed later
 
       if(data.success){
-        alert("OTP Sent to your email (use 1234 as OTP for testing)");
+        toast.success("OTP Sent to your email (use 1234 as OTP for testing)");
         setStep(2);
       }
       else {
-        alert("Signup failed");
-        // Add toast later
+        toast.error("Signup failed");
       }
     } catch (error) {
       console.log("Error at sendOTP: ",error);
     }
     console.log("Sending OTP to:", formData.email);
-    alert(`OTP Sent to ${formData.email} (Check console/use 1234)`);
+    toast.success(`OTP Sent to ${formData.email} (Check console/use 1234)`);
     setStep(2);
   };
 
@@ -76,11 +76,10 @@ const SignupForm = ({ onSwitchToLogin }) => {
       console.log("Verify OTP Response: ",data); // To be removed later 
 
       if(data.success) {
-        alert("Account Created Successfully! Please Login."); // Change it later
+        toast.success("Account Created Successfully! Please Login.");
         navigate('/');
       } else {
-        alert("Invalid OTP. Please try again.");
-        // Add toast later
+        toast.error("Invalid OTP. Please try again.");
       }
     } catch (error) {
       console.log("Error at verify: ",error);

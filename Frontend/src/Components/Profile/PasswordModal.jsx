@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import styles from '../../styles/Profile.module.css';
+import { toast } from 'react-hot-toast';
 
 const PasswordModal = ({ isOpen, onClose }) => {
   const [step, setStep] = useState(1); // 1: Confirm, 2: OTP, 3: New Password
@@ -24,11 +25,11 @@ const PasswordModal = ({ isOpen, onClose }) => {
         if (res.ok && data.success) {
           setStep(2);
         } else {
-          alert(data.message || 'Failed to request OTP');
+          toast.error(data.message || 'Failed to request OTP');
         }
       } catch (err) {
         console.error('Request OTP error:', err);
-        alert('Network error while requesting OTP');
+        toast.error('Network error while requesting OTP');
       }
     })();
   };
@@ -51,11 +52,11 @@ const PasswordModal = ({ isOpen, onClose }) => {
           setResetToken(data.data);
           setStep(3);
         } else {
-          alert(data.message || 'Invalid OTP');
+          toast.error(data.message || 'Invalid OTP');
         }
       } catch (err) {
         console.error('Verify OTP error:', err);
-        alert('Network error while verifying OTP');
+        toast.error('Network error while verifying OTP');
       }
     })();
   };
@@ -63,11 +64,11 @@ const PasswordModal = ({ isOpen, onClose }) => {
   // STEP 3: Submit New Password
   const handleSubmitNewPassword = () => {
     if (newPassword !== confirmPassword) {
-      alert("Passwords do not match!");
+      toast.error("Passwords do not match!");
       return;
     }
     if (!resetToken) {
-      alert('Missing reset token. Please verify OTP again.');
+      toast.error('Missing reset token. Please verify OTP again.');
       return;
     }
 
@@ -82,14 +83,14 @@ const PasswordModal = ({ isOpen, onClose }) => {
 
         const data = await res.json();
         if (res.ok && data.success) {
-          alert('Password changed successfully!');
+          toast.success('Password changed successfully!');
           handleClose();
         } else {
-          alert(data.message || 'Failed to update password');
+          toast.error(data.message || 'Failed to update password');
         }
       } catch (err) {
         console.error('Update password error:', err);
-        alert('Network error while updating password');
+        toast.error('Network error while updating password');
       }
     })();
   };
