@@ -4,10 +4,12 @@ import { myVideoService
     likedVideoService,
     updateNameService,
     updateChannelService,
+    updateProfileColorService,
     profileService,
     resetPasswordService,
     verifyResetService,
-    updatePasswordService
+    updatePasswordService,
+    deleteVideoService
 } from "./user.service.js";
 
 export const myVideoController = async (req, res) => {
@@ -29,6 +31,35 @@ export const myVideoController = async (req, res) => {
             success:false,
             message:"internal server error"
         })
+    }
+}
+
+export const deleteVideoController = async (req, res) => {
+    try {
+        const userId = req.user?._id;
+        const { videoId } = req.params;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: "Unauthorized" });
+        }
+
+        if (!videoId) {
+            return res.status(400).json({ success: false, message: "Missing video id" });
+        }
+
+        const response = await deleteVideoService(userId, videoId);
+
+        return res.status(response.status).json({
+            success: response.success,
+            message: response.message,
+            data: response.data
+        });
+    } catch (error) {
+        console.log("at deleteVideo: ", error);
+        return res.status(500).json({
+            success: false,
+            message: "internal server error"
+        });
     }
 }
 
@@ -126,19 +157,44 @@ export const updateNameController = async(req,res) => {
     }
 }
 
+export const updateProfileColorController = async(req,res) => {
+    try {
+        const userId = req.user._id;
+        const { profileColor } = req.body;
+
+        if(!userId || !profileColor) {
+            return res.status(400).json({success:false,message:"Missing fields"})
+        }
+
+        let response = await updateProfileColorService(userId, profileColor);
+
+        return res.status(response.status).json({
+            success: response.success,
+            message:response.message,
+            data:response.data
+        })
+    } catch (error) {
+        console.log("at updateProfileColor: ",error);
+        return res.status(500).json({
+            success:false,
+            message:"internal server error"
+        })
+    }
+}
+
 export const updateChannelController = async(req,res) => {
     try {
         const userId = req.user._id;
-        const {channelName,channelDescription} = req.body;
+        const {channelName,channelDescription, channelAvatarColor} = req.body;
 
         if(!userId) {
             return res.status(401).json({success:false,message:"Unauthorized"})
         }
 
-        if(!channelName && !channelDescription) {
+        if(!channelName && !channelDescription && !channelAvatarColor) {
             return res.status(400).json({success:false,message:"Invalid request"});
         }
-        let response = await updateChannelService(userId,channelName,channelDescription);
+        let response = await updateChannelService(userId,channelName,channelDescription,channelAvatarColor);
 
         return res.status(response.status).json({
             success: response.success,

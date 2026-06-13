@@ -18,7 +18,7 @@ const videoSchema = new mongoose.Schema({
 
   status: {
     type:String,
-    enum: ['queued', 'processing', 'ready', 'failed'],
+    enum: ['queued', 'processing', 'ready', 'failed', 'deleting'],
     default: 'queued',
     required: true
   },
@@ -70,6 +70,33 @@ const videoSchema = new mongoose.Schema({
   thumbnailPath: {
     type: String,
     required: true,
+    default: null,
+  },
+  rawS3Key: {
+    type: String,
+    default: null,
+  },
+  thumbnailS3Key: {
+    type: String,
+    default: null,
+  },
+  processedS3Prefix: {
+    type: String,
+    default: null,
+  },
+  transcodeJobId: {
+    type: String,
+    default: null,
+  },
+  uploadSessionId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "UploadSession",
+    default: null,
+    unique: true,
+    sparse: true,
+  },
+  uploadIdempotencyKey: {
+    type: String,
     default: null,
   },
   views : {

@@ -4,6 +4,7 @@ import Video from '../Models/Video.js'
 import History from '../Models/History.js'
 import Liked from '../Models/Liked.js'
 import { Channel } from '../Models/Channel.js'
+import { backfillVideoViewsFromHistory } from '../Utils/viewCounts.js'
 
 export const watchLaterService = async (userId, videoId) => {
     try {
@@ -83,9 +84,11 @@ export const historyService = async (userId, videoId) => {
         if (existingEntry) {
             existingEntry.watchedAt = new Date();
             await existingEntry.save();
+            await backfillVideoViewsFromHistory(video);
             return {
                 status: 200,
                 success: true,
+                countedView: false,
                 message: "Video watch time updated in History",
             };
         }
@@ -94,9 +97,13 @@ export const historyService = async (userId, videoId) => {
             videoId: videoId,
             watchedAt: new Date()
         });
+        video.views = (video.views || 0) + 1;
+        await video.save();
+
         return {
             status: 201,
             success: true,
+            countedView: true,
             message: "Video added to History",
             data: newHistory
         };
@@ -133,8 +140,8 @@ export const likeService = async (userId, videoId) => {
         const existingEntry = await Liked.findOne({ user: userId, videoId: videoId });
         if (existingEntry) {
             await Liked.deleteOne({ _id: existingEntry._id });
-            video.likesCount = video.likesCount - 1;
-            video.save();
+            video.likesCount = Math.max(0, video.likesCount - 1);
+            await video.save();
 
             return {
                 status: 400,
@@ -151,7 +158,7 @@ export const likeService = async (userId, videoId) => {
             });
 
             video.likesCount = video.likesCount + 1;
-            video.save();
+            await video.save();
             
         } catch (error) {
             console.log("Error while creating like");

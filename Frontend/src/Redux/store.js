@@ -15,10 +15,21 @@ const authSlice = createSlice({
 
 const ProfileSlice = createSlice({
   name: "profile",
-  initialState: { profileData: {username:"Muzammil"} },
+  initialState: {
+    profileData: {
+      username: "Muzammil",
+      profileColor: "#6b21a8",
+      channelName: "My Channel",
+      channelDescription: "Welcome to my channel!",
+      channelAvatarColor: "#6b21a8",
+    }
+  },
   reducers: {
     setProfileData(state, action) {
-      state.profileData = action.payload;
+      state.profileData = {
+        ...state.profileData,
+        ...action.payload,
+      };
     }
   }
 });

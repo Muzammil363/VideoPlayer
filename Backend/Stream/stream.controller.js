@@ -140,6 +140,12 @@ export const sendSegment = async (req, res) => {
                 error: response.message,
             });
         }
+
+        if (response.body) {
+            res.setHeader('Content-Type', response.contentType || 'video/MP2T');
+            return response.body.pipe(res);
+        }
+
         res.sendFile(response.path) //i dont know whether this is correct or not
     } catch (error) {
         console.log("Server Error in sendSegment: " + error);
@@ -188,8 +194,8 @@ export const SearchVideosController = async (req, res) => {
                 error: "query is required",
             });
         }
-        const user=req.user;
-        const response = await SearchVideosService(query,user);
+        const pageNo = Number(req.query.page || 0);
+        const response = await SearchVideosService(query, pageNo);
         console.log("response: ",response);
         
         return res.status(response.status).json({

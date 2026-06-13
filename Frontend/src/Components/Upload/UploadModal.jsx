@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import styles from '../../styles/UploadModal.module.css';
 import { toast } from 'react-hot-toast';
+import ConfirmDialog from '../Common/ConfirmDialog';
 
 const GENRES = [
   'Education', 'Entertainment', 'Music', 'Gaming', 'Technology',
@@ -8,7 +9,7 @@ const GENRES = [
   'Science', 'Art', 'Documentary', 'Other'
 ];
 
-const UploadModal = ({ isOpen, onClose }) => {
+const UploadModal = ({ isOpen, onClose, onUploadQueued }) => {
   // --- Form State ---
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -20,12 +21,24 @@ const UploadModal = ({ isOpen, onClose }) => {
   // Status can be: 'idle', 'initializing', 'uploading', 'paused', 'processing'
   const [uploadStatus, setUploadStatus] = useState('idle');
   const [progress, setProgress] = useState(0);
+  const [isCancelConfirmOpen, setIsCancelConfirmOpen] = useState(false);
 
   // --- Refs for pausing/resuming without losing data ---
   const uploadStatusRef = useRef('idle'); // Mirrors state but readable inside async loops
   const chunkIndexRef = useRef(0);
   const uploadedPartsRef = useRef([]);
   const uploadContextRef = useRef(null); // Stores URLs and metadata safely
+  const idempotencyKeyRef = useRef(null);
+  const isStartingUploadRef = useRef(false);
+  const isCompletingUploadRef = useRef(false);
+
+  const getOrCreateIdempotencyKey = () => {
+    if (!idempotencyKeyRef.current) {
+      idempotencyKeyRef.current = window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    return idempotencyKeyRef.current;
+  };
 
   // --- Safety Net: Prevent accidental tab closing ---
   useEffect(() => {
@@ -65,10 +78,14 @@ const UploadModal = ({ isOpen, onClose }) => {
   // --- Safe Close Handler ---
   const handleCloseRequest = () => {
     if (uploadStatus === 'uploading' || uploadStatus === 'paused') {
-      const confirmLeave = window.confirm("Upload is in progress. Are you sure you want to cancel and close?");
-      if (!confirmLeave) return;
+      setIsCancelConfirmOpen(true);
+      return;
     }
 
+    resetAndClose();
+  };
+
+  const resetAndClose = () => {
     // Reset state before closing
     setTitle('');
     setDescription('');
@@ -77,22 +94,30 @@ const UploadModal = ({ isOpen, onClose }) => {
     setThumbnailFile(null);
     setStatus('idle');
     setProgress(0);
+    setIsCancelConfirmOpen(false);
+    idempotencyKeyRef.current = null;
+    isStartingUploadRef.current = false;
+    isCompletingUploadRef.current = false;
     onClose();
   };
 
   // --- STEP 1: Handshake & Initialize ---
   const startUpload = async () => {
+    if (isStartingUploadRef.current || uploadStatus !== 'idle') return;
+
     if (!title || !videoFile || !thumbnailFile) {
       toast.error("Please fill in all required fields (Title, Video, Thumbnail)");
       return;
     }
 
+    isStartingUploadRef.current = true;
     setStatus('initializing');
     setProgress(0);
     chunkIndexRef.current = 0;
     uploadedPartsRef.current = [];
 
     try {
+      const idempotencyKey = getOrCreateIdempotencyKey();
       const CHUNK_SIZE = 8 * 1024 * 1024; // 8 MB
       const totalChunks = Math.max(1, Math.ceil(videoFile.size / CHUNK_SIZE));
 
@@ -104,17 +129,27 @@ const UploadModal = ({ isOpen, onClose }) => {
         body: JSON.stringify({
           videoFilename: videoFile.name,
           videoContentType: videoFile.type || 'video/mp4',
+          videoSize: videoFile.size,
           thumbnailFilename: thumbnailFile.name,
           thumbnailContentType: thumbnailFile.type || 'image/jpeg',
+          thumbnailSize: thumbnailFile.size,
           chunkSize: CHUNK_SIZE,
-          totalChunks
+          totalChunks,
+          idempotencyKey
         }),
       });
 
       if (!uploadUrlResponse.ok) throw new Error(`Could not get upload URLs`);
 
-      const { success, folderPath, video, thumbnail } = await uploadUrlResponse.json();
+      const uploadUrlData = await uploadUrlResponse.json();
+      const { success, folderPath, video, thumbnail } = uploadUrlData;
       if (!success) throw new Error('Invalid upload URL response from server');
+
+      if (uploadUrlData.completed) {
+        onUploadQueued?.(uploadUrlData);
+        resetAndClose();
+        return;
+      }
 
       // 2. Upload Thumbnail immediately (it's small)
       const thumbnailUploadResponse = await fetch(thumbnail.uploadUrl, {
@@ -133,17 +168,21 @@ const UploadModal = ({ isOpen, onClose }) => {
         thumbnailKey: thumbnail.s3Key,
         folderPath,
         totalChunks,
-        CHUNK_SIZE
+        CHUNK_SIZE,
+        idempotencyKey
       };
 
       // 4. Start the chunk loop
       setStatus('uploading');
+      isStartingUploadRef.current = false;
       processChunks();
 
     } catch (error) {
       console.error('Initialization failed', error);
       toast.error(`Upload failed: ${error.message}`);
       setStatus('idle');
+      idempotencyKeyRef.current = null;
+      isStartingUploadRef.current = false;
     }
   };
 
@@ -202,8 +241,11 @@ const UploadModal = ({ isOpen, onClose }) => {
 
   // --- STEP 3: Complete & Stitch ---
   const completeUpload = async () => {
+    if (isCompletingUploadRef.current) return;
+
+    isCompletingUploadRef.current = true;
     setStatus('processing');
-    const { videoKey, uploadId, folderPath, thumbnailKey } = uploadContextRef.current;
+    const { videoKey, uploadId, folderPath, thumbnailKey, idempotencyKey } = uploadContextRef.current;
 
     try {
       const completeResponse = await fetch('http://localhost:3000/upload/complete-multipart-upload', {
@@ -221,15 +263,16 @@ const UploadModal = ({ isOpen, onClose }) => {
           thumbnailPath: thumbnailKey,
           originalName: videoFile.name,
           mimeType: videoFile.type,
-          size: videoFile.size
+          size: videoFile.size,
+          idempotencyKey
         })
       });
 
-      if (!completeResponse.ok) throw new Error(`Failed to finalize upload`);
+      const completionData = await completeResponse.json();
+      if (!completeResponse.ok || !completionData.success) {
+        throw new Error(completionData.error || completionData.message || `Failed to finalize upload`);
+      }
 
-      toast.success('Upload complete and video is queued for processing!');
-
-      // Reset Form
       setTitle('');
       setDescription('');
       setSelectedGenres([]);
@@ -237,12 +280,19 @@ const UploadModal = ({ isOpen, onClose }) => {
       setThumbnailFile(null);
       setStatus('idle');
       setProgress(0);
-      onClose();
+      idempotencyKeyRef.current = null;
+      isCompletingUploadRef.current = false;
+      onUploadQueued?.(completionData);
+      if (!onUploadQueued) {
+        toast.success('Upload queued for processing. You can track it in My Channel.');
+        onClose();
+      }
 
     } catch (error) {
       console.error('Completion failed', error);
       toast.error(`Finalization failed: ${error.message}`);
       setStatus('paused');
+      isCompletingUploadRef.current = false;
     }
   };
 
@@ -372,7 +422,7 @@ const UploadModal = ({ isOpen, onClose }) => {
           {uploadStatus === 'idle' && (
             <>
               <button className={styles.cancelBtn} onClick={handleCloseRequest}>Cancel</button>
-              <button className={styles.uploadBtn} onClick={startUpload}>Upload</button>
+              <button className={styles.uploadBtn} onClick={startUpload} disabled={isStartingUploadRef.current}>Upload</button>
             </>
           )}
 
@@ -392,6 +442,16 @@ const UploadModal = ({ isOpen, onClose }) => {
         </div>
 
       </div>
+
+      <ConfirmDialog
+        isOpen={isCancelConfirmOpen}
+        title="Cancel upload?"
+        message="Upload is in progress. If you close now, your current upload progress will be lost."
+        confirmLabel="Cancel Upload"
+        danger
+        onCancel={() => setIsCancelConfirmOpen(false)}
+        onConfirm={resetAndClose}
+      />
     </div>
   );
 };

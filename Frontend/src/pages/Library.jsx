@@ -45,10 +45,6 @@ const LibraryPage = () => {
     const formattedVideos = apiResponse.map((item) => {
       const video = item.videoId;
 
-      const rawPath = video.thumbnailPath || "";
-      const thumbnail = rawPath.split("\\")[2];
-      console.log(thumbnail);
-
       return {
         id: video._id,
         title: video.title,
@@ -56,7 +52,7 @@ const LibraryPage = () => {
         views: video.views >= 1000 ? `${(video.views / 1000).toFixed(1)}K` : video.views.toString(),
         time: formatRelativeTime(video.uploadTime),
         duration: video.duration || "00:00",
-        thumbnail: `http://localhost:3000/thumbnails/${thumbnail}`
+        thumbnail: video.thumbnailUrl || video.thumbnailPath || `https://picsum.photos/seed/${video._id}/640/360`
       };
     });
     if (type === "liked") {

@@ -16,6 +16,11 @@ const channelSchema = new mongoose.Schema({
         default:"Welcome to my channel!",
         required: false
     },
+    avatarColor: {
+        type: String,
+        enum: ['#6b21a8', '#0f766e', '#1d4ed8', '#be123c', '#374151'],
+        default: '#6b21a8',
+    },
     subscribers: {
         type: Number,
         default: 0

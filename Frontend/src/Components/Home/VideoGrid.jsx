@@ -1,43 +1,54 @@
 import React from 'react';
-import { useState } from 'react';
-import styles from '../../styles/Home.module.css';
 import { Link } from 'react-router-dom';
+import styles from '../../styles/Home.module.css';
+import {
+  formatRelativeTime,
+  formatViews,
+  getChannelAvatarColor,
+  getChannelInitial,
+  getChannelName,
+  getVideoId,
+} from '../../Utils/videoDisplay';
 
-import { formatDistanceToNowStrict , parseISO} from 'date-fns';
-
-// Mock Data to simulate a database response
-
-const VideoGrid = ({videos}) => {
+const VideoGrid = ({ videos = [] }) => {
   return (
     <main className={styles.mainContent}>
       <div className={styles.videoGrid}>
-        {videos.map((video) => (
-          <Link to={video.id ? `/video/${video.id}` : `/video/${video._id}`} key={video.id} className={styles.videoLink}>
-          <div key={video.id} className={styles.card}>
-            {/* Thumbnail */}
-            <div className={styles.thumbnailContainer}>
-              <img 
-              {...console.log("updated: ",video.thumbnailPath)}
-                src={video.thumbnailPath || `https://picsum.photos/seed/${video.id}/640/360`} 
-                alt="thumbnail" 
-                className={styles.thumbnailImage} 
-              />
-              <span className={styles.duration}>{video.duration}</span>
-            </div>
+        {videos.map((video) => {
+          const videoId = getVideoId(video);
+          const channelName = getChannelName(video);
+          const channelInitial = getChannelInitial(video);
+          const channelAvatarColor = getChannelAvatarColor(video);
+          const uploadTime = formatRelativeTime(video.uploadTime, video.time);
 
-            {/* Meta Data */}
-            <div className={styles.cardDetails}>
-              <div className={styles.channelIcon}></div>
-              <div className={styles.meta}>
-                <h3 className={styles.videoTitle}>{video.title}</h3>
-                <span className={styles.channelName}>{video.channel.name ? video.channel.name : video.channel}</span>
-                <span className={styles.views}>{video.views || "0 views"} • 
-                  {video.uploadTime ? formatDistanceToNowStrict(parseISO(video.uploadTime), { addSuffix: true }) : video.time}</span>
+          return (
+            <Link to={`/video/${videoId}`} key={videoId} className={styles.videoLink}>
+              <div className={styles.card}>
+                <div className={styles.thumbnailContainer}>
+                  <img
+                    src={video.thumbnailUrl || video.thumbnailPath || `https://picsum.photos/seed/${videoId}/640/360`}
+                    alt={video.title || 'Video thumbnail'}
+                    className={styles.thumbnailImage}
+                  />
+                  {video.duration ? <span className={styles.duration}>{video.duration}</span> : null}
+                </div>
+
+                <div className={styles.cardDetails}>
+                  <div className={styles.channelIcon} style={{ backgroundColor: channelAvatarColor }}>
+                    {channelInitial}
+                  </div>
+                  <div className={styles.meta}>
+                    <h3 className={styles.videoTitle}>{video.title}</h3>
+                    <span className={styles.channelName}>{channelName}</span>
+                    <span className={styles.views}>
+                      {formatViews(video.views)}{uploadTime ? ` • ${uploadTime}` : ''}
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-          </Link>
-        ))}
+            </Link>
+          );
+        })}
       </div>
     </main>
   );

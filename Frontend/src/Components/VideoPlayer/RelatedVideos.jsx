@@ -1,5 +1,7 @@
 import React,{useState,useEffect} from 'react';
+import { Link } from 'react-router-dom';
 import styles from '../../styles/VideoPlayer.module.css';
+import { formatViews, getChannelName } from '../../Utils/videoDisplay';
 
 const mockRelated = [
   { id: 101, title: "Next.js 14 Full Course 2024", channel: "Web Dev Simplified", views: "300K" },
@@ -47,20 +49,28 @@ const RelatedVideos = ({videoId}) => {
     <div className={styles.relatedContainer}>
       <h3 style={{fontSize:'1rem', marginBottom:'10px'}}>You might like</h3>
       
-      {(relatedVideos.length ? relatedVideos : mockRelated).map((video) => (
-        <div key={video._id || video.id} className={styles.relatedCard}>
+      {(relatedVideos.length ? relatedVideos : mockRelated).map((video) => {
+        const videoId = video._id || video.id;
+        const channelName = getChannelName(video);
+
+        return (
+        <Link
+          to={`/video/${videoId}`}
+          key={videoId}
+          className={styles.relatedCard}
+        >
           <img 
-            src={video.thumbnailPath ? video.thumbnailPath : `https://picsum.photos/seed/${video._id || video.id}/320/180`} 
+            src={video.thumbnailUrl || video.thumbnailPath || `https://picsum.photos/seed/${videoId}/320/180`}
             className={styles.relatedThumb} 
-            alt="thumb" 
+            alt={video.title || 'Video thumbnail'}
           />
           <div className={styles.relatedDetails}>
             <span className={styles.relatedTitle}>{video.title}</span>
-            <span className={styles.relatedMeta}>{video.channel || video.channelName}</span>
-            <span className={styles.relatedMeta}>{video.likesCount ? `${video.likesCount} likes` : ''}</span>
+            <span className={styles.relatedMeta}>{channelName}</span>
+            <span className={styles.relatedMeta}>{formatViews(video.views)}</span>
           </div>
-        </div>
-      ))}
+        </Link>
+      )})}
     </div>
   );
 };

@@ -1,19 +1,25 @@
 import React from 'react';
+import { useSelector } from 'react-redux';
 import styles from '../../styles/MyChannel.module.css';
 
 const ChannelInfo = ({onUploadClick}) => {
+  const profile = useSelector((state) => state.profile.profileData);
+  const channelName = profile?.channelName || 'My Channel';
+  const channelDescription = profile?.channelDescription || 'Sharing knowledge through videos.';
+  const channelAvatarColor = profile?.channelAvatarColor || '#6b21a8';
+
   return (
     <div className={styles.channelHeader}>
       {/* LEFT SIDE: Avatar + Info */}
       <div className={styles.headerLeft}>
-        <div className={styles.channelAvatar}>
-          U
+        <div className={styles.channelAvatar} style={{ backgroundColor: channelAvatarColor }}>
+          {channelName.charAt(0).toUpperCase()}
         </div>
         
         <div className={styles.channelDetails}>
-          <h1 className={styles.channelName}>User's Channel</h1>
+          <h1 className={styles.channelName}>{channelName}</h1>
           <span className={styles.channelStats}>1.2M subscribers</span>
-          <span className={styles.channelStats}>Sharing knowledge about React and Web Development.</span>
+          <span className={styles.channelStats}>{channelDescription}</span>
         </div>
       </div>
 

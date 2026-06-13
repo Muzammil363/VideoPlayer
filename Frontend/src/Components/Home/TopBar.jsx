@@ -11,9 +11,14 @@ const TopBar = ({ toggleSidebar,query='' }) => {
   const[searchQuery,setSearchQuery]=useState(query);
   const isloggedIn = useSelector((state) => state.auth.isAuthenticated);
   const profile = useSelector((state) => state.profile.profileData);
+  const profileColor = profile?.profileColor || '#6b21a8';
   // console.log("profile: ",profile);
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    setSearchQuery(query || '');
+  }, [query]);
 
   const handleInputChange = (e) => {
     setSearchQuery(e.target.value);
@@ -61,7 +66,7 @@ const TopBar = ({ toggleSidebar,query='' }) => {
 
       {isloggedIn ? <NavLink to={'/u/profile'}>
         <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-          <div style={{ width: 32, height: 32, background: 'purple', borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          <div style={{ width: 32, height: 32, background: profileColor, borderRadius: '50%', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {profile?.username ? profile.username.charAt(0).toUpperCase() : 'U'}
           </div>

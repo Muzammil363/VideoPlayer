@@ -7,11 +7,13 @@ import { myVideoController,
     historyController,
     likedVideoController,
     updateNameController,
+    updateProfileColorController,
     updateChannelController,
     profileController,
     resetPasswordController,
     verifyResetController,
-    updatePasswordController
+    updatePasswordController,
+    deleteVideoController
 } from "./user.controller.js";
 
 const router = express.Router();
@@ -22,6 +24,7 @@ router.use(requireUser);
 // get profile details
 router.get("/profile",profileController);
 router.get("/myVideos",myVideoController)
+router.delete("/videos/:videoId", deleteVideoController);
 // get watch later
 router.get("/watch-later",watchLaterController);
 // get history
@@ -32,6 +35,7 @@ router.get("/liked-videos",likedVideoController);
 router.post("/updateChannel",updateChannelController);
 // update name 
 router.post("/updatename",updateNameController);
+router.post("/profile-color", updateProfileColorController);
 // reset password 
 
 router.put("/reset-password",resetPasswordController);

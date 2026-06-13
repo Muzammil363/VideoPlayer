@@ -19,13 +19,39 @@ import { redisConnection } from "./app.js";
 const RAW_BUCKET = process.env.AWS_RAW_BUCKET_NAME; 
 const PROCESSED_BUCKET = process.env.AWS_PROCESSED_BUCKET_NAME; 
 
+const cleanupLocalFiles = (localInputPath, localOutputFolder) => {
+    if (fs.existsSync(localInputPath)) {
+        fs.unlinkSync(localInputPath);
+    }
+
+    if (fs.existsSync(localOutputFolder)) {
+        fs.rmSync(localOutputFolder, { recursive: true, force: true });
+    }
+};
+
+const cleanupProcessedFiles = async (processedPrefix, files) => {
+    for (const file of files) {
+        const deleteCommand = new DeleteObjectCommand({
+            Bucket: PROCESSED_BUCKET,
+            Key: `${processedPrefix}${file}`,
+        });
+        await s3Client.send(deleteCommand);
+    }
+};
+
 const myWorker = new Worker("videoQueue", async (job) => {
     const { s3Key, videoId, dbVideoId } = job.data;
 
     console.log(`Starting job ${job.id} for video: ${s3Key}`);
 
+    const queuedVideo = await Video.findById(dbVideoId);
+    if (!queuedVideo || queuedVideo.status === 'deleting') {
+        console.log(`Skipping job ${job.id}; video was deleted before processing.`);
+        return { success: false, skipped: true };
+    }
+
     await Video.findByIdAndUpdate(dbVideoId, {
-            status: 'processing'
+        status: 'processing'
     });
 
     const localInputPath = path.resolve(`./temp/${videoId}-input.mp4`);
@@ -60,13 +86,22 @@ const myWorker = new Worker("videoQueue", async (job) => {
 
         console.log("Uploading processed files..!");
         const files = fs.readdirSync(localOutputFolder);
+        const processedPrefix = `videos/${videoId}/`;
+
+        const currentVideo = await Video.findById(dbVideoId).select('status');
+        if (!currentVideo || currentVideo.status === 'deleting') {
+            console.log(`Skipping processed upload for job ${job.id}; video was deleted.`);
+            cleanupLocalFiles(localInputPath, localOutputFolder);
+            return { success: false, skipped: true };
+        }
+
         for (const file of files) {
             const filePath = path.join(localOutputFolder, file);
             const fileStream = fs.createReadStream(filePath);
             
             const putCommand = new PutObjectCommand({
                 Bucket: PROCESSED_BUCKET,
-                Key: `videos/${videoId}/${file}`,
+                Key: `${processedPrefix}${file}`,
                 Body: fileStream,
                 ContentType: file.endsWith('.m3u8') ? 'application/x-mpegURL' : 'video/MP2T'
             });
@@ -83,8 +118,16 @@ const myWorker = new Worker("videoQueue", async (job) => {
         const manifestUrl = `https://${PROCESSED_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/videos/${videoId}/master.m3u8`;
         console.log(`✅ Job ${job.id} Complete! Manifest URL: ${manifestUrl}`);
 
+        const readyVideo = await Video.findById(dbVideoId).select('status');
+        if (!readyVideo || readyVideo.status === 'deleting') {
+            console.log(`Skipping ready update for job ${job.id}; video was deleted.`);
+            await cleanupProcessedFiles(processedPrefix, files);
+            return { success: false, skipped: true };
+        }
+
         await Video.findByIdAndUpdate(dbVideoId, {
             m3u8Path: manifestUrl,
+            processedS3Prefix: processedPrefix,
             status: 'ready'
         });
 
@@ -95,7 +138,10 @@ const myWorker = new Worker("videoQueue", async (job) => {
         
         if (dbVideoId) {
             try {
-                await Video.findByIdAndUpdate(dbVideoId, { status: 'failed' });
+                const failedVideo = await Video.findById(dbVideoId).select('status');
+                if (failedVideo && failedVideo.status !== 'deleting') {
+                    await Video.findByIdAndUpdate(dbVideoId, { status: 'failed' });
+                }
             } catch (dbError) {
                 console.error(`Failed to update DB status for job ${job.id}:`, dbError);
             }
@@ -124,6 +170,9 @@ myWorker.on('completed', (job) => {
 myWorker.on('failed', async (job, err) => {
   console.error(`Video ${job.data.dbVideoId} failed permanently: ${err.message}`);
   // This is where you would trigger DB status updates to "failed"
-    await Video.findByIdAndUpdate(job.data.dbVideoId, { status: 'failed' })
+    const failedVideo = await Video.findById(job.data.dbVideoId).select('status');
+    if (failedVideo && failedVideo.status !== 'deleting') {
+        await Video.findByIdAndUpdate(job.data.dbVideoId, { status: 'failed' })
+    }
 
 });

@@ -1,16 +1,22 @@
 import Video from "../Models/Video.js"
 import Liked from "../Models/Liked.js"
 import watchLater from "../Models/WatchLater.js"
+import { addSignedThumbnailToVideo } from "../Utils/thumbnailUrl.js"
+import { backfillVideoViewsFromHistory } from "../Utils/viewCounts.js"
 
 export const getVideoById= async (videoId) => {
-    return await Video.findById(videoId);
+    const video = await Video.findById(videoId).populate('channel', 'name avatarColor');
+    await backfillVideoViewsFromHistory(video);
+    return await addSignedThumbnailToVideo(video);
 }
 
 export const getVideos = async (pageNo) => {
     try {
         const limit = 20;
         const skip = pageNo * limit;
-        return await Video.find().populate('channel','name').skip(skip).limit(limit + 1); //fetching one extra to check whether next page is there or not
+        const videos = await Video.find({ status: 'ready' }).populate('channel','name avatarColor').skip(skip).limit(limit + 1); //fetching one extra to check whether next page is there or not
+        await Promise.all(videos.map(backfillVideoViewsFromHistory));
+        return await Promise.all(videos.map(addSignedThumbnailToVideo));
     } catch (error) {
         console.error("Error fetching videos:", error);
         return [];

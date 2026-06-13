@@ -1,0 +1,7 @@
+{
+  "name": "videoplayer",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start-all.mjs"
+  }
+}

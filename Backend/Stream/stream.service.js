@@ -3,14 +3,69 @@ import { isLiked,isSaved } from './stream.dto.js'
 import {User} from '../Models/User.js';
 import Video from '../Models/Video.js';
 import { historyService } from '../VideoControls/videoControl.service.js';
+import { addSignedThumbnailToVideo } from '../Utils/thumbnailUrl.js';
+import { backfillVideoViewsFromHistory } from '../Utils/viewCounts.js';
+import { s3Client } from '../Config/awsConfig.js';
+import { GetObjectCommand } from '@aws-sdk/client-s3';
 
 import jwt from "jsonwebtoken";
 import fs from 'fs/promises';
 import path from 'path';
 
+const getS3KeyFromUrl = (value) => {
+    if (!value || !value.startsWith('http')) return null;
+
+    try {
+        const url = new URL(value);
+        return decodeURIComponent(url.pathname.replace(/^\/+/, ''));
+    } catch (error) {
+        return null;
+    }
+};
+
+const getParentS3Prefix = (key) => {
+    const index = key.lastIndexOf('/');
+    return index === -1 ? '' : key.slice(0, index + 1);
+};
+
+const joinS3Key = (prefix, value) => {
+    if (value.startsWith('http')) return getS3KeyFromUrl(value);
+    return `${prefix}${value.replace(/^\/+/, '')}`.replaceAll('\\', '/');
+};
+
+const getS3TextObject = async (key) => {
+    const response = await s3Client.send(new GetObjectCommand({
+        Bucket: process.env.AWS_PROCESSED_BUCKET_NAME,
+        Key: key,
+    }));
+
+    return await response.Body.transformToString();
+};
+
+const rewriteS3Manifest = (manifestContent, currentKey) => {
+    const prefix = getParentS3Prefix(currentKey);
+
+    return manifestContent.split('\n').map((line) => {
+        const trimmed = line.trim();
+        if (!trimmed || trimmed.startsWith('#')) return line;
+
+        const s3Key = joinS3Key(prefix, trimmed);
+        if (!s3Key) return line;
+
+        const route = s3Key.endsWith('.m3u8') ? '/stream/manifest' : '/stream/segment';
+        const resourceToken = jwt.sign(
+            { s3Key },
+            process.env.JWT_SECRET,
+            { expiresIn: '24h' }
+        );
+
+        return `${route}?token=${resourceToken}`;
+    }).join('\n');
+};
+
 export const getVideoService = async (token, videoId) => {
-    const video = await getVideoById(videoId);
-    if (!video) {
+    let video = await getVideoById(videoId);
+    if (!video || video.status !== 'ready') {
         return {
             success: false,
             message: "no video with the given videoId",
@@ -30,6 +85,7 @@ export const getVideoService = async (token, videoId) => {
         liked = await isLiked(decoded._id, videoId) != null;
         saved = await isSaved(decoded._id, videoId) != null;
         await historyService(decoded._id,videoId);
+        video = await getVideoById(videoId);
     }
     return {
         success: true,
@@ -46,7 +102,7 @@ export const loadMoreVideosService = async (pageNo , user) => {
     
     let fetched=null;
     if(pageNo == 0 && user) {
-        fetched = await User.findById(user._id);
+        fetched = await User.findById(user._id).select('username profileColor');
     }
     return {
         success: true,
@@ -58,7 +114,7 @@ export const loadMoreVideosService = async (pageNo , user) => {
 
 export const sendMasterManifestService = async (videoId, userAuthToken) => {
     const video = await getVideoById(videoId);
-    if (!video) {
+    if (!video || video.status !== 'ready') {
         return {
             success: false,
             status: 404,
@@ -67,6 +123,18 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
     }
     
     try {
+        const s3ManifestKey = video.processedS3Prefix
+            ? `${video.processedS3Prefix}master.m3u8`
+            : getS3KeyFromUrl(video.m3u8Path);
+
+        if (s3ManifestKey && process.env.AWS_PROCESSED_BUCKET_NAME) {
+            const manifestContent = await getS3TextObject(s3ManifestKey);
+            return {
+                success: true,
+                manifestContent: rewriteS3Manifest(manifestContent, s3ManifestKey),
+            };
+        }
+
         // --- File Reading Step ---
         // Construct the path to the original master manifest file
         const manifestPath = path.join(process.cwd(), video.m3u8Path);
@@ -90,7 +158,8 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
 
                 // Construct the new, absolute, signed URL
                 // Note: The token is passed as a query parameter to your /manifest endpoint
-                return `/stream/manifest?token=${resourceToken}`;
+                const route = line.trim().endsWith('.m3u8') ? '/stream/manifest' : '/stream/segment';
+                return `${route}?token=${resourceToken}`;
             }
             return line;
         });
@@ -111,6 +180,14 @@ export const sendMasterManifestService = async (videoId, userAuthToken) => {
 export const sendManifestService = async (token) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if (decoded.s3Key) {
+            const manifestContent = await getS3TextObject(decoded.s3Key);
+            return {
+                success: true,
+                manifestContent: rewriteS3Manifest(manifestContent, decoded.s3Key),
+            };
+        }
 
         const manifestPath = path.join(process.cwd(), decoded.resource);
         const manifestContent = await fs.readFile(manifestPath, 'utf8');
@@ -148,6 +225,21 @@ export const sendSegmentService = async (token) => {
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
+        if (decoded.s3Key) {
+            const segment = await s3Client.send(new GetObjectCommand({
+                Bucket: process.env.AWS_PROCESSED_BUCKET_NAME,
+                Key: decoded.s3Key,
+            }));
+
+            return {
+                success: true,
+                body: segment.Body,
+                contentType: decoded.s3Key.endsWith('.m3u8')
+                    ? 'application/vnd.apple.mpegurl'
+                    : 'video/MP2T',
+            };
+        }
+
         const relativePath = decoded.resource;
         const absolutePath = path.join(process.cwd(), relativePath);
 
@@ -183,18 +275,30 @@ export const recomendedVideoService = async (videoId) => {
         const videosByGenre = {};
 
         for (const g of genres) {
-            const vids = await Video.find({ genre: g, _id: { $ne: video._id } })
+            const vids = await Video.find({
+                    genre: g,
+                    _id: { $ne: video._id },
+                    status: 'ready'
+                })
                 .sort({ uploadTime: -1 })
                 .limit(5)
-                .select('_id title likesCount channel')
-                .populate({ path: 'channel', select: 'name' })
-                .lean();
+                .select('_id title likesCount views thumbnailPath thumbnailS3Key channel')
+                .populate({ path: 'channel', select: 'name avatarColor' });
 
-            videosByGenre[g] = vids.map(v => ({
+            await Promise.all(vids.map(backfillVideoViewsFromHistory));
+            const signedVideos = await Promise.all(vids.map(addSignedThumbnailToVideo));
+            videosByGenre[g] = signedVideos.map(v => ({
                 _id: v._id,
                 title: v.title,
                 likesCount: v.likesCount,
-                channel: v.channel ? v.channel.name : null
+                views: v.views,
+                thumbnailPath: v.thumbnailPath,
+                thumbnailUrl: v.thumbnailUrl,
+                channel: v.channel ? {
+                    _id: v.channel._id,
+                    name: v.channel.name,
+                    avatarColor: v.channel.avatarColor
+                } : null
             }));
         }
 
@@ -212,21 +316,35 @@ export const recomendedVideoService = async (videoId) => {
     }
 }
 
-export const SearchVideosService = async (query,pageNo) => {
+export const SearchVideosService = async (query,pageNo = 0) => {
     try {
         const limit = 20;
-        const videos = await Video.find({ title: { $regex: query, $options: 'i' } })
+        const page = Number.isInteger(Number(pageNo)) ? Number(pageNo) : 0;
+        const videos = await Video.find({
+                title: { $regex: query, $options: 'i' },
+                status: 'ready'
+            })
             .sort({ uploadTime: -1 })
-            .skip(pageNo * limit)
+            .skip(page * limit)
             .limit(limit)
-            .select('_id title likesCount channel')
-            .populate({ path: 'channel', select: 'name' })
-            .lean();
-        const formattedVideos = videos.map(v => ({
+                .select('_id title description likesCount views uploadTime thumbnailPath thumbnailS3Key channel')
+                .populate({ path: 'channel', select: 'name avatarColor' });
+        await Promise.all(videos.map(backfillVideoViewsFromHistory));
+        const signedVideos = await Promise.all(videos.map(addSignedThumbnailToVideo));
+        const formattedVideos = signedVideos.map(v => ({
             _id: v._id,
             title: v.title, 
+            description: v.description,
             likesCount: v.likesCount,
-            channel: v.channel ? v.channel.name : null
+            views: v.views,
+            uploadTime: v.uploadTime,
+            thumbnailPath: v.thumbnailPath,
+            thumbnailUrl: v.thumbnailUrl,
+            channel: v.channel ? {
+                _id: v.channel._id,
+                name: v.channel.name,
+                avatarColor: v.channel.avatarColor
+            } : null
         }));
         console.log("formatted: ",formattedVideos);
         return {
