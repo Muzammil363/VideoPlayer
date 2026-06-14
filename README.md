@@ -92,9 +92,6 @@ Route-level code splitting and dynamic HLS loading were added to reduce the init
 | Initial JavaScript | 938,501 B | 340,788 B | 63.7% smaller |
 | Initial JavaScript gzip | 295.22 KB | 112.68 KB | 61.8% smaller |
 
-Resume-ready summary:
-
-> Reduced initial JavaScript payload by 63.7% using route-level code splitting and dynamic HLS loading.
 
 ## Environment Variables
 
