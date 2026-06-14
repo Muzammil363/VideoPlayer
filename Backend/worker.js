@@ -51,7 +51,10 @@ const myWorker = new Worker("videoQueue", async (job) => {
     }
 
     await Video.findByIdAndUpdate(dbVideoId, {
-        status: 'processing'
+        status: 'processing',
+        processingStartedAt: new Date(),
+        processingFailedAt: null,
+        processingError: null,
     });
 
     const localInputPath = path.resolve(`./temp/${videoId}-input.mp4`);
@@ -128,7 +131,10 @@ const myWorker = new Worker("videoQueue", async (job) => {
         await Video.findByIdAndUpdate(dbVideoId, {
             m3u8Path: manifestUrl,
             processedS3Prefix: processedPrefix,
-            status: 'ready'
+            status: 'ready',
+            processingCompletedAt: new Date(),
+            processingFailedAt: null,
+            processingError: null,
         });
 
         return { success: true, manifestUrl };
@@ -140,7 +146,11 @@ const myWorker = new Worker("videoQueue", async (job) => {
             try {
                 const failedVideo = await Video.findById(dbVideoId).select('status');
                 if (failedVideo && failedVideo.status !== 'deleting') {
-                    await Video.findByIdAndUpdate(dbVideoId, { status: 'failed' });
+                    await Video.findByIdAndUpdate(dbVideoId, {
+                        status: 'failed',
+                        processingFailedAt: new Date(),
+                        processingError: error.message,
+                    });
                 }
             } catch (dbError) {
                 console.error(`Failed to update DB status for job ${job.id}:`, dbError);
@@ -172,7 +182,11 @@ myWorker.on('failed', async (job, err) => {
   // This is where you would trigger DB status updates to "failed"
     const failedVideo = await Video.findById(job.data.dbVideoId).select('status');
     if (failedVideo && failedVideo.status !== 'deleting') {
-        await Video.findByIdAndUpdate(job.data.dbVideoId, { status: 'failed' })
+        await Video.findByIdAndUpdate(job.data.dbVideoId, {
+            status: 'failed',
+            processingFailedAt: new Date(),
+            processingError: err.message,
+        })
     }
 
 });

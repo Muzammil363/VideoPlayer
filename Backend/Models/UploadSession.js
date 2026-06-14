@@ -61,5 +61,8 @@ const uploadSessionSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 uploadSessionSchema.index({ user: 1, idempotencyKey: 1 }, { unique: true });
+uploadSessionSchema.index({ status: 1, createdAt: -1 });
+uploadSessionSchema.index({ user: 1, createdAt: -1 });
+uploadSessionSchema.index({ videoId: 1 });
 
 export default mongoose.model("UploadSession", uploadSessionSchema);

@@ -8,6 +8,7 @@ import uploadRouter from './Upload/upload.router.js';
 import streamRouter from './Stream/stream.router.js';
 import userRouter from './User/user.router.js';
 import videoControls from './VideoControls/videoControl.router.js'
+import adminRouter from './Admin/admin.router.js';
 
 import './Config/awsConfig.js';
 import {connectMongoDB} from './Config/Mongo.js';
@@ -50,6 +51,7 @@ app.use("/user", userRouter);
 app.use('/upload', uploadRouter);
 app.use('/stream', streamRouter);
 app.use('/save',videoControls);
+app.use('/admin', adminRouter);
 
 app.listen(3000,()=>{
     console.log('Server is running on port 3000');

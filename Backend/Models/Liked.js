@@ -16,5 +16,7 @@ const likedSchema = new mongoose.Schema({
         required:true
     }
 })
-// likedSchema.createIndex({likedAt:-1});
+likedSchema.index({ user: 1, videoId: 1 }, { unique: true });
+likedSchema.index({ videoId: 1 });
+likedSchema.index({ likedAt: -1 });
 export default mongoose.model("Liked",likedSchema);

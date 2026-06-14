@@ -16,5 +16,7 @@ const watchLaterSchema = new mongoose.Schema({
         required:true
     }
 })
-// watchLaterSchema.createIndex({savedAt:-1});
+watchLaterSchema.index({ user: 1, videoId: 1 }, { unique: true });
+watchLaterSchema.index({ videoId: 1 });
+watchLaterSchema.index({ savedAt: -1 });
 export default mongoose.model("WatchLater",watchLaterSchema);

@@ -20,6 +20,14 @@ const userSchema = new mongoose.Schema({
         enum: ['#6b21a8', '#0f766e', '#1d4ed8', '#be123c', '#374151'],
         default: '#6b21a8',
     },
+    role: {
+        type: String,
+        enum: ['user', 'admin'],
+        default: 'user',
+        index: true,
+    },
 }, { timestamps: true });
+
+userSchema.index({ createdAt: -1 });
 
 export const User = mongoose.model('User', userSchema);

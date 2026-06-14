@@ -88,6 +88,22 @@ const videoSchema = new mongoose.Schema({
     type: String,
     default: null,
   },
+  processingStartedAt: {
+    type: Date,
+    default: null,
+  },
+  processingCompletedAt: {
+    type: Date,
+    default: null,
+  },
+  processingFailedAt: {
+    type: Date,
+    default: null,
+  },
+  processingError: {
+    type: String,
+    default: null,
+  },
   uploadSessionId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "UploadSession",
@@ -112,5 +128,11 @@ const videoSchema = new mongoose.Schema({
     index: true,
   },
 });
+
+videoSchema.index({ status: 1, uploadTime: -1 });
+videoSchema.index({ uploadedBy: 1, uploadTime: -1 });
+videoSchema.index({ channel: 1, uploadTime: -1 });
+videoSchema.index({ transcodeJobId: 1 });
+videoSchema.index({ title: 'text', description: 'text' });
 
 export default mongoose.model("Video", videoSchema); // even i set Video correctly

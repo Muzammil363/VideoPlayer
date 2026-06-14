@@ -139,7 +139,7 @@ const deleteLocalPathIfPresent = async (relativePath) => {
     }
 };
 
-export const deleteVideoService = async (userId, videoId) => {
+export const deleteVideoService = async (userId, videoId, options = {}) => {
     try {
         const video = await Video.findById(videoId);
         if (!video) {
@@ -151,7 +151,7 @@ export const deleteVideoService = async (userId, videoId) => {
             };
         }
 
-        if (video.uploadedBy.toString() !== userId.toString()) {
+        if (!options.allowAdmin && video.uploadedBy.toString() !== userId.toString()) {
             return {
                 status: 403,
                 success: false,

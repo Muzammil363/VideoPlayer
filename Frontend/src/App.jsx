@@ -1,6 +1,4 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { lazy, Suspense } from 'react'
 import './App.css'
 import { createBrowserRouter ,RouterProvider } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
@@ -8,13 +6,44 @@ import { Toaster } from 'react-hot-toast'
 import RootLayout from './Components/RootLayout/RootLayout.jsx'
 
 import Home from './pages/Home'
-import MyChannelPage from './pages/MyChannel.jsx'
-import LibraryPage from './pages/Library.jsx'
-import HistoryPage from './pages/History.jsx'
-import ProfilePage from './pages/Profile.jsx'
-import AuthPage from './pages/Auth.jsx'
-import VideoPlayerPage from './pages/VideoPlayer.jsx'
-import SearchPage from './pages/SearchPage.jsx'
+
+const MyChannelPage = lazy(() => import('./pages/MyChannel.jsx'));
+const LibraryPage = lazy(() => import('./pages/Library.jsx'));
+const HistoryPage = lazy(() => import('./pages/History.jsx'));
+const ProfilePage = lazy(() => import('./pages/Profile.jsx'));
+const AuthPage = lazy(() => import('./pages/Auth.jsx'));
+const VideoPlayerPage = lazy(() => import('./pages/VideoPlayer.jsx'));
+const SearchPage = lazy(() => import('./pages/SearchPage.jsx'));
+const AdminLayout = lazy(() => import('./Components/Admin/AdminLayout.jsx'));
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview.jsx'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers.jsx'));
+const AdminUserDetail = lazy(() => import('./pages/admin/AdminUserDetail.jsx'));
+const AdminVideos = lazy(() => import('./pages/admin/AdminVideos.jsx'));
+const AdminVideoDetail = lazy(() => import('./pages/admin/AdminVideoDetail.jsx'));
+const AdminJobs = lazy(() => import('./pages/admin/AdminJobs.jsx'));
+const AdminUploadSessions = lazy(() => import('./pages/admin/AdminUploadSessions.jsx'));
+const AdminStorageHealth = lazy(() => import('./pages/admin/AdminStorageHealth.jsx'));
+
+const RouteFallback = () => (
+  <div style={{
+    minHeight: '240px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: '#606060',
+    background: '#f9f9f9',
+    fontFamily: 'Roboto, sans-serif',
+    fontWeight: 600,
+  }}>
+    Loading...
+  </div>
+);
+
+const lazyRoute = (Component) => (
+  <Suspense fallback={<RouteFallback />}>
+    <Component />
+  </Suspense>
+);
 
 function App() {
   const router = createBrowserRouter([
@@ -23,22 +52,36 @@ function App() {
       element: <RootLayout />,
       children: [
         { index: true, element: <Home /> },
-        { path: 'video/:videoId', element: <VideoPlayerPage /> },
-        { path: 'search/:searchQuery', element: <SearchPage /> },
+        { path: 'video/:videoId', element: lazyRoute(VideoPlayerPage) },
+        { path: 'search/:searchQuery', element: lazyRoute(SearchPage) },
         {
           path: 'u',
           children: [
-            { path: 'myChannel', element: <MyChannelPage /> },
-            { path: 'library', element: <LibraryPage /> },
-            { path: 'history', element: <HistoryPage /> },
-            { path: 'profile', element: <ProfilePage /> }
+            { path: 'myChannel', element: lazyRoute(MyChannelPage) },
+            { path: 'library', element: lazyRoute(LibraryPage) },
+            { path: 'history', element: lazyRoute(HistoryPage) },
+            { path: 'profile', element: lazyRoute(ProfilePage) }
           ]
         }
       ]
     },
     {
       path: '/auth',
-      element: <AuthPage />
+      element: lazyRoute(AuthPage)
+    },
+    {
+      path: '/admin',
+      element: lazyRoute(AdminLayout),
+      children: [
+        { index: true, element: lazyRoute(AdminOverview) },
+        { path: 'users', element: lazyRoute(AdminUsers) },
+        { path: 'users/:userId', element: lazyRoute(AdminUserDetail) },
+        { path: 'videos', element: lazyRoute(AdminVideos) },
+        { path: 'videos/:videoId', element: lazyRoute(AdminVideoDetail) },
+        { path: 'jobs', element: lazyRoute(AdminJobs) },
+        { path: 'uploads', element: lazyRoute(AdminUploadSessions) },
+        { path: 'storage', element: lazyRoute(AdminStorageHealth) }
+      ]
     }
   ]);
 

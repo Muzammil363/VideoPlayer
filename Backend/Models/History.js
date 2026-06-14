@@ -17,5 +17,7 @@ const historySchema=new mongoose.Schema({
         required:true
     }
 })
-// historySchema.createIndex({watchedAt:-1});
+historySchema.index({ user: 1, videoId: 1 }, { unique: true });
+historySchema.index({ videoId: 1 });
+historySchema.index({ watchedAt: -1 });
 export default mongoose.model("History",historySchema);

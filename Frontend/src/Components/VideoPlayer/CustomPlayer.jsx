@@ -1,5 +1,4 @@
 import React, { useEffect, useRef, useState } from 'react';
-import Hls from 'hls.js';
 import styles from '../../styles/VideoPlayer.module.css';
 
 const CustomPlayer = ({ videoSrc, thumbnailUrl }) => {
@@ -65,6 +64,7 @@ const CustomPlayer = ({ videoSrc, thumbnailUrl }) => {
 
   useEffect(() => {
     let hls;
+    let isCancelled = false;
     const video = videoRef.current;
 
     if (!video || !videoSrc) {
@@ -86,56 +86,72 @@ const CustomPlayer = ({ videoSrc, thumbnailUrl }) => {
     playPromiseRef.current = null;
     ignoreNextAbortRef.current = false;
 
-    if (Hls.isSupported()) {
-      hls = new Hls();
-      hlsRef.current = hls;
-
-      hls.attachMedia(video);
-
-      hls.on(Hls.Events.MEDIA_ATTACHED, () => {
-        hls.loadSource(videoSrc);
-      });
-
-      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
-        const availableQualities = data.levels.map((level, index) => ({
-          height: level.height,
-          index,
-        }));
-
-        setQualities([{ height: 'Auto', index: -1 }, ...availableQualities.reverse()]);
+    const setupPlayback = async () => {
+      if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = videoSrc;
         setIsBuffering(false);
-        setPlayerError('');
-      });
+        return;
+      }
 
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        console.error('HLS playback error:', data);
+      const { default: Hls } = await import('hls.js');
+      if (isCancelled) return;
 
-        if (!data.fatal) return;
+      if (Hls.isSupported()) {
+        hls = new Hls();
+        hlsRef.current = hls;
 
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          setPlayerError('Network issue while loading video. Retrying...');
-          hls.startLoad();
-          return;
-        }
+        hls.attachMedia(video);
 
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          setPlayerError('Media issue while playing video. Recovering...');
-          hls.recoverMediaError();
-          return;
-        }
+        hls.on(Hls.Events.MEDIA_ATTACHED, () => {
+          hls.loadSource(videoSrc);
+        });
 
-        setPlayerError('This video cannot be played right now.');
+        hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+          const availableQualities = data.levels.map((level, index) => ({
+            height: level.height,
+            index,
+          }));
+
+          setQualities([{ height: 'Auto', index: -1 }, ...availableQualities.reverse()]);
+          setIsBuffering(false);
+          setPlayerError('');
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          console.error('HLS playback error:', data);
+
+          if (!data.fatal) return;
+
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            setPlayerError('Network issue while loading video. Retrying...');
+            hls.startLoad();
+            return;
+          }
+
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            setPlayerError('Media issue while playing video. Recovering...');
+            hls.recoverMediaError();
+            return;
+          }
+
+          setPlayerError('This video cannot be played right now.');
+          setIsBuffering(false);
+          hls.destroy();
+        });
+      } else {
+        setPlayerError('HLS is not supported in this browser.');
         setIsBuffering(false);
-        hls.destroy();
-      });
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-      video.src = videoSrc;
-    } else {
-      setPlayerError('HLS is not supported in this browser.');
+      }
+    };
+
+    setupPlayback().catch((error) => {
+      console.error('HLS setup failed:', error);
+      setPlayerError('This video cannot be played right now.');
       setIsBuffering(false);
-    }
+    });
 
     return () => {
+      isCancelled = true;
       if (hls) hls.destroy();
       hlsRef.current = null;
       playPromiseRef.current = null;
